@@ -11,7 +11,7 @@ export function VerifyBadge({ player }: { player: { verified: boolean; verify_mo
       </span>
     );
   return (
-    <span className="chip border-base-400 bg-base-600 text-steel" title={player.verify_mock ? "Token verification is not configured on the server (mock mode)." : "Hold the required tokens to verify."}>
+    <span className="chip border-base-400 bg-base-600 text-steel" title="Hold the required tokens to verify.">
       Unverified
     </span>
   );
@@ -76,12 +76,6 @@ export function IdentityModal({ onClose }: { onClose: () => void }) {
               Sign out
             </button>
           </div>
-        )}
-        {config && !config.verifyLive && (
-          <p className="mt-3 text-[11px] text-steel/70">
-            Note: server token verification is in mock mode (no RPC / token CA set). You can play and build;
-            verified-kill rewards activate once the server is configured.
-          </p>
         )}
       </div>
     </div>

@@ -10,7 +10,11 @@ the treasury. Anti-farming is enforced from day one.
 > This is **not** a wager system. No betting, no gambling. Creators earn from players;
 > players earn from verified kills.
 
-**Solana mainnet-beta.** Configure your own token CA + treasury before going live.
+**Solana mainnet-beta.**
+
+- Token (CA): `C3RxH72uCos4VT2VZ6Y4LgthHy9k4uSwQGxiyxDBpump`
+- Verification: hold ≥ 250,000 of the token (real on-chain SPL balance check on mainnet-beta).
+- X / Twitter: https://x.com/PumpStrike_Fun
 
 ## Stack
 - **client/** — React + TypeScript + Vite + React Three Fiber + Three.js + Tailwind.
@@ -71,7 +75,7 @@ GET /api/transactions · GET /api/leaderboard · GET /api/treasury`
 | --- | --- |
 | `DATABASE_URL` | Neon/managed Postgres (Render disk is ephemeral) |
 | `SOLANA_RPC_URL` | paid mainnet RPC (Helius/QuickNode/Triton) — required for verification + payouts |
-| `TOKEN_CA` | the pump.fun token mint players must hold |
+| `TOKEN_CA` | the pump.fun token mint players must hold (`C3RxH72uCos4VT2VZ6Y4LgthHy9k4uSwQGxiyxDBpump`) |
 | `MIN_TOKENS` | verification threshold (default 250000) |
 | `TREASURY_WALLET_PRIVATE_KEY` | funds player payouts |
 | `CREATOR_REWARDS_WALLET_PRIVATE_KEY` | funds creator reward claims |

@@ -35,7 +35,7 @@ services:
         sync: false
       # The pump.fun token contract address players must hold to be verified.
       - key: TOKEN_CA
-        sync: false
+        value: C3RxH72uCos4VT2VZ6Y4LgthHy9k4uSwQGxiyxDBpump
       # Treasury wallet — funds the reward pool / player payouts.
       - key: TREASURY_WALLET_PRIVATE_KEY
         sync: false

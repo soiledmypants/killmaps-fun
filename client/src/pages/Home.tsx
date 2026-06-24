@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { LobbyScene } from "../three/LobbyScene";
-import { Nav, DevModeBadge } from "../components/Nav";
+import { Nav } from "../components/Nav";
 import { IdentityModal, VerifyBadge } from "../components/IdentityModal";
 import { MapThumb } from "../components/MapThumb";
 import { usePlayer } from "../lib/player";
@@ -95,12 +95,6 @@ export default function Home() {
           <Row label="Verified players"><span className="text-accent font-mono">{playersTracked}</span></Row>
           <Row label="Rewards pool"><span className="text-accent font-mono">{rewardsPool != null ? `${rewardsPool} SOL` : "—"}</span></Row>
         </Panel>
-        {config?.devVerifyOff && (
-          <div className="panel p-3 border-accent/40">
-            <DevModeBadge />
-            <p className="text-[11px] text-steel mt-2 leading-relaxed">Token verification is bypassed for testing. Everyone counts as verified.</p>
-          </div>
-        )}
       </aside>
 
       {/* CENTER COPY + CTA */}
@@ -137,7 +131,7 @@ export default function Home() {
                 </div>
                 <div className="flex items-center gap-2 mt-0.5">
                   <span className="text-[11px] text-steel font-mono">{shortWallet(wallet, 5)}</span>
-                  {config?.devVerifyOff ? <span className="chip border-accent/50 text-accent text-[9px]">DEV VERIFIED</span> : <VerifyBadge player={player} />}
+                  <VerifyBadge player={player} />
                 </div>
               </div>
               <button className="btn h-8 px-3 text-xs" onClick={() => setModal(true)}>Edit Profile</button>
@@ -152,11 +146,6 @@ export default function Home() {
             </>
           )}
         </div>
-      </div>
-
-      {/* mobile CTA fallback for dev badge */}
-      <div className="absolute top-16 right-3 lg:hidden">
-        <DevModeBadge />
       </div>
 
       {modal && <IdentityModal onClose={() => setModal(false)} />}

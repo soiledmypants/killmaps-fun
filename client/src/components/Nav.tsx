@@ -15,16 +15,6 @@ const links = [
   { to: "/profile", label: "Profile", icon: User },
 ];
 
-export function DevModeBadge({ className = "" }: { className?: string }) {
-  const config = usePlayer((s) => s.config);
-  if (!config?.devVerifyOff) return null;
-  return (
-    <span className={`chip border-accent/60 bg-accent/15 text-accent animate-pulse ${className}`}>
-      DEV MODE — TOKEN VERIFY OFF
-    </span>
-  );
-}
-
 export function Nav({ overlay = false }: { overlay?: boolean }) {
   const { username, player } = usePlayer();
   const [modal, setModal] = useState(false);
@@ -64,7 +54,6 @@ export function Nav({ overlay = false }: { overlay?: boolean }) {
           </nav>
 
           <div className="ml-auto flex items-center gap-2">
-            <DevModeBadge className="hidden lg:inline-flex" />
             {SOCIALS.twitter && (
               <a href={SOCIALS.twitter} target="_blank" rel="noreferrer" title="@PumpStrike_Fun on X" className="w-8 h-8 flex items-center justify-center border border-base-400 bg-base-700/80 text-steel hover:text-white hover:bg-base-600 transition-colors">
                 <X size={15} />
