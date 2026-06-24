@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { NavLink, Link } from "react-router-dom";
 import { usePlayer } from "../lib/player";
+import { SOCIALS } from "../lib/config";
 import { IdentityModal, VerifyBadge } from "./IdentityModal";
-import { Target, Wrench, Shield, Globe, Coins, Receipt, User } from "./icons";
+import { Target, Wrench, Shield, Globe, Coins, Receipt, User, X } from "./icons";
 
 const links = [
   { to: "/", label: "Play", icon: Target, end: true },
@@ -41,7 +42,7 @@ export function Nav({ overlay = false }: { overlay?: boolean }) {
           <Link to="/" className="flex items-center gap-2 shrink-0">
             <Target size={20} className="text-accent" />
             <span className="font-bold tracking-tight text-white">
-              KillMaps<span className="text-accent">.fun</span>
+              Pump<span className="text-accent">Strike</span>
             </span>
           </Link>
 
@@ -64,6 +65,11 @@ export function Nav({ overlay = false }: { overlay?: boolean }) {
 
           <div className="ml-auto flex items-center gap-2">
             <DevModeBadge className="hidden lg:inline-flex" />
+            {SOCIALS.twitter && (
+              <a href={SOCIALS.twitter} target="_blank" rel="noreferrer" title="@PumpStrike_Fun on X" className="w-8 h-8 flex items-center justify-center border border-base-400 bg-base-700/80 text-steel hover:text-white hover:bg-base-600 transition-colors">
+                <X size={15} />
+              </a>
+            )}
             <button
               className="flex items-center gap-2 px-3 py-1.5 border border-base-400 bg-base-700/80 hover:bg-base-600 transition-colors backdrop-blur"
               onClick={() => setModal(true)}

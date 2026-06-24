@@ -235,8 +235,23 @@ export function resolveRules(map: { rules?: Partial<MatchRules> }): MatchRules {
 }
 
 export function spawnsOf(map: GameMap): Vec3[] {
+  return spawnsWithFacing(map).map((s) => s.pos);
+}
+
+export interface SpawnPoint {
+  pos: Vec3;
+  yaw: number; // facing direction (radians)
+  team: "A" | "B" | null;
+}
+
+/** Spawn points with their creator-set facing direction. */
+export function spawnsWithFacing(map: GameMap): SpawnPoint[] {
   const s = map.objects
     .filter((o: MapObject) => o.kind === "spawn" || o.kind === "team_spawn")
-    .map((o) => [o.position[0], o.position[1] + 0.1, o.position[2]] as Vec3);
-  return s.length ? s : [[0, 1, 0]];
+    .map((o) => ({
+      pos: [o.position[0], o.position[1] + 0.1, o.position[2]] as Vec3,
+      yaw: o.rotation?.[1] || 0,
+      team: (o.settings?.team as "A" | "B") || null,
+    }));
+  return s.length ? s : [{ pos: [0, 1, 0], yaw: 0, team: null }];
 }

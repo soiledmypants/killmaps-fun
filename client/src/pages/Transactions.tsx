@@ -6,6 +6,7 @@ import { shortWallet, solscanTx } from "../lib/config";
 import { Receipt } from "../components/icons";
 
 const TYPE_LABEL: Record<string, { label: string; cls: string }> = {
+  settlement: { label: "Ledger settlement", cls: "text-accent" },
   creator_reward: { label: "Creator payout", cls: "text-accent" },
   player_reward: { label: "Player payout", cls: "text-verify" },
 };
@@ -32,7 +33,7 @@ export default function Transactions() {
           <div className="col-span-3">Type</div>
           <div className="col-span-3">Wallet</div>
           <div className="col-span-2 text-right">Amount</div>
-          <div className="col-span-2 text-right">Points</div>
+          <div className="col-span-2 text-right">Status</div>
           <div className="col-span-2 text-right">Tx</div>
         </div>
         {loading ? (
@@ -46,8 +47,8 @@ export default function Transactions() {
               <div key={t.id} className="grid grid-cols-12 px-4 py-3 border-b border-base-600 items-center text-sm hover:bg-base-700/40">
                 <div className={`col-span-3 font-semibold ${meta.cls}`}>{meta.label}</div>
                 <div className="col-span-3 font-mono text-steel">{shortWallet(t.wallet, 5)}</div>
-                <div className="col-span-2 text-right font-mono text-white">{t.amount} <span className="text-steel text-xs">SOL</span></div>
-                <div className="col-span-2 text-right font-mono text-steel">{t.points ?? "—"}</div>
+                <div className="col-span-2 text-right font-mono text-white">${typeof t.amount === "number" ? t.amount.toFixed(2) : t.amount}</div>
+                <div className="col-span-2 text-right font-mono text-steel">{t.status}</div>
                 <div className="col-span-2 text-right">
                   {t.onchain ? (
                     <a href={solscanTx(t.tx_hash, cluster)} target="_blank" rel="noreferrer" className="text-accent hover:underline font-mono text-xs">

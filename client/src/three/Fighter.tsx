@@ -219,11 +219,38 @@ export function Fighter({
                 </mesh>
               </>
             )}
-            {/* eye visor */}
-            <mesh position={[0, 0.08, 0.12]}>
-              <boxGeometry args={[0.19, 0.06, 0.05]} />
-              <meshStandardMaterial color="#0a0c0e" roughness={0.3} metalness={0.5} emissive="#161a08" emissiveIntensity={0.5} />
-            </mesh>
+            {/* balaclava eye slit with visible eyes (low-poly) */}
+            <group position={[0, 0.085, 0.116]}>
+              {/* recessed dark slit opening */}
+              <mesh>
+                <boxGeometry args={[0.2, 0.052, 0.035]} />
+                <meshStandardMaterial color="#0c0d0f" roughness={0.95} />
+              </mesh>
+              {/* brow line above the slit */}
+              <mesh position={[0, 0.04, 0.005]}>
+                <boxGeometry args={[0.21, 0.03, 0.04]} />
+                {mat(p.mask, 0.85)}
+              </mesh>
+              {[-0.05, 0.05].map((x) => (
+                <group key={x} position={[x, 0, 0.012]}>
+                  {/* eyeball — slight specular */}
+                  <mesh>
+                    <sphereGeometry args={[0.023, 10, 10]} />
+                    <meshStandardMaterial color="#e9dec9" roughness={0.22} metalness={0.05} />
+                  </mesh>
+                  {/* iris/pupil */}
+                  <mesh position={[0, 0, 0.016]}>
+                    <sphereGeometry args={[0.011, 8, 8]} />
+                    <meshStandardMaterial color="#2a2018" roughness={0.15} metalness={0.2} />
+                  </mesh>
+                  {/* catch-light glint */}
+                  <mesh position={[0.008, 0.008, 0.022]}>
+                    <sphereGeometry args={[0.004, 6, 6]} />
+                    <meshBasicMaterial color="#ffffff" />
+                  </mesh>
+                </group>
+              ))}
+            </group>
           </group>
         </group>
       </group>

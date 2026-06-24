@@ -1,7 +1,10 @@
+import http from "http";
 import express from "express";
 import cors from "cors";
 import { read, write, init, flush } from "./db.js";
-import { evaluateKill, creatorUnlocked, ANTIFARM, uid, fakeTxHash } from "./antifarm.js";
+import { ANTIFARM, uid, fakeTxHash } from "./antifarm.js";
+import { recordValidatedKill, rewardsView, settle, REWARD } from "./rewards.js";
+import { initRealtime, getRoomCounts } from "./realtime.js";
 import {
   sendPayout,
   getTokenBalance,
@@ -12,13 +15,9 @@ import {
 } from "./solana.js";
 
 const app = express();
+app.set("trust proxy", true); // so req.ip reflects the real client behind Render's proxy
 
-// ---- Reward economics (env-overridable) ----
-const POINTS_PER_SOL = Number(process.env.REWARD_POINTS_PER_SOL) || 10000;
-const CREATOR_POINTS_PER_KILL = Number(process.env.CREATOR_POINTS_PER_KILL) || 10;
-const PLAYER_POINTS_PER_KILL = Number(process.env.PLAYER_POINTS_PER_KILL) || 5;
-const MIN_CREATOR_CLAIM_POINTS = Number(process.env.MIN_CREATOR_CLAIM_POINTS) || 1000;
-const MIN_PLAYER_CLAIM_POINTS = Number(process.env.MIN_PLAYER_CLAIM_POINTS) || 500;
+const MAX_PLAYERS = Number(process.env.MAX_PLAYERS || 16);
 const VERIFY_CACHE_MS = Number(process.env.VERIFY_CACHE_MS) || 5 * 60 * 1000;
 
 const SOLANA_CLUSTER = process.env.SOLANA_CLUSTER || "mainnet-beta";
@@ -62,19 +61,7 @@ const PORT = process.env.PORT || 9001;
 // ---------------------------------------------------------------------------
 const trim = (s) => (typeof s === "string" ? s.trim() : "");
 
-function getLedger(db, wallet) {
-  const w = trim(wallet);
-  if (!db.ledger[w]) {
-    db.ledger[w] = { wallet: w, creator_points: 0, player_points: 0, creator_claimed: 0, player_claimed: 0 };
-  }
-  return db.ledger[w];
-}
-
-function pointsToSol(points) {
-  return Math.floor((points / POINTS_PER_SOL) * 1e6) / 1e6; // 6-dp floor, no over-pay
-}
-
-/** Record a transaction and, for reward claims, perform the real on-chain transfer. */
+/** Record a transaction and, for outbound types, perform the real on-chain transfer. */
 async function tx(db, { type, wallet, amount, points, source, status = "confirmed", meta = {} }) {
   let tx_hash = fakeTxHash();
   let onchain = false;
@@ -132,11 +119,10 @@ function publicConfig() {
     rpcConfigured: solanaConfig.rpcConfigured,
     treasuryWallet: solanaConfig.treasuryPublicKey,
     rewardsWallet: solanaConfig.rewardsPublicKey,
-    pointsPerSol: POINTS_PER_SOL,
-    creatorPointsPerKill: CREATOR_POINTS_PER_KILL,
-    playerPointsPerKill: PLAYER_POINTS_PER_KILL,
-    minCreatorClaimPoints: MIN_CREATOR_CLAIM_POINTS,
-    minPlayerClaimPoints: MIN_PLAYER_CLAIM_POINTS,
+    maxPlayers: MAX_PLAYERS,
+    rewardPerKill: REWARD.PER_KILL,
+    settlementIntervalMs: REWARD.SETTLEMENT_MS,
+    dailyCreatorCap: REWARD.DAILY_CAP,
     antifarm: {
       spawnProtectionMs: ANTIFARM.SPAWN_PROTECTION_MS,
       minMatchMs: ANTIFARM.MIN_MATCH_MS,
@@ -246,19 +232,27 @@ function sortMaps(maps, sort) {
   return maps.sort(by[sort] || ((a, b) => b.updated_at - a.updated_at));
 }
 
+function withLive(m, counts) {
+  return { ...m, active_players: counts[m.map_id] || 0, max_players: MAX_PLAYERS };
+}
+
 app.get("/api/maps", (req, res) => {
   const db = read();
+  const counts = getRoomCounts();
   let maps = Object.values(db.maps);
   if (req.query.creator) maps = maps.filter((m) => m.creator === req.query.creator);
   if (req.query.published !== undefined) maps = maps.filter((m) => m.published === (req.query.published === "true"));
-  res.json(sortMaps(maps, req.query.sort));
+  res.json(sortMaps(maps, req.query.sort).map((m) => withLive(m, counts)));
 });
+
+// Live room counts for the match browser / loading screen.
+app.get("/api/rooms", (_req, res) => res.json({ counts: getRoomCounts(), maxPlayers: MAX_PLAYERS }));
 
 app.get("/api/maps/:id", (req, res) => {
   const db = read();
   const map = db.maps[req.params.id];
   if (!map) return res.status(404).json({ error: "not found" });
-  res.json(map);
+  res.json(withLive(map, getRoomCounts()));
 });
 
 app.post("/api/maps", async (req, res) => {
@@ -364,8 +358,9 @@ app.post("/api/matches/:id/end", async (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
-// Kills: record a kill, run anti-farm, credit the reward ledger if valid.
-// NEVER pays on-chain here — points accrue and are claimed in batches later.
+// Kills: validate a PvP kill and accrue Creator Reward Ledger activity. NPC/test
+// kills never count (victim isn't a registered verified player). Never pays here —
+// the ledger settles on a 5-minute schedule.
 // ---------------------------------------------------------------------------
 app.post("/api/kills/record", async (req, res) => {
   const db = read();
@@ -374,173 +369,28 @@ app.post("/api/kills/record", async (req, res) => {
   const map = db.maps[body.map_id || match?.map_id];
   const killer = db.players[trim(body.killer)] || null;
   const victim = db.players[trim(body.victim)] || null;
-  const now = Date.now();
 
-  const verdict = evaluateKill(db, {
-    map,
-    match,
-    killer,
-    victim,
-    event: {
-      killer: body.killer,
-      victim: body.victim,
-      weapon: body.weapon,
-      time_since_spawn_ms: body.time_since_spawn_ms,
-      fire_rate: body.fire_rate,
-      move_speed: body.move_speed,
-      accuracy: body.accuracy,
-      killer_distance: body.killer_distance,
-    },
-    now,
+  const result = recordValidatedKill(db, {
+    map, match, killer, victim, weapon: trim(body.weapon) || "m4", head: !!body.head,
+    killerIp: req.ip, victimIp: body.victim_ip || null,
+    fire_rate: body.fire_rate, accuracy: body.accuracy, killer_distance: body.killer_distance, time_since_spawn_ms: body.time_since_spawn_ms,
   });
-
-  const kill = {
-    id: uid("kill"),
-    match_id: body.match_id || null,
-    map_id: map?.map_id || null,
-    creator: map?.creator || null,
-    killer: trim(body.killer),
-    victim: trim(body.victim),
-    weapon: trim(body.weapon) || "rifle",
-    distance: body.distance ?? null,
-    timestamp: now,
-    counted: verdict.counted,
-    reasons: verdict.reasons,
-    score: verdict.score,
-  };
-  db.kills.push(kill);
-  if (db.kills.length > 50000) db.kills.splice(0, db.kills.length - 50000); // bound the log
-
-  if (map) {
-    map.stats.total_kills = (map.stats.total_kills || 0) + 1;
-    if (match) match.kills += 1;
-  }
-
-  // Suspicious-but-uncounted kills are logged for admin/debug review.
-  if (!verdict.counted && verdict.score < 60) {
-    db.flags.push({ id: uid("flag"), kill_id: kill.id, map_id: kill.map_id, killer: kill.killer, victim: kill.victim, reasons: verdict.reasons, timestamp: now });
-    if (db.flags.length > 5000) db.flags.splice(0, db.flags.length - 5000);
-  }
-
-  if (verdict.counted && map) {
-    map.stats.verified_kills = (map.stats.verified_kills || 0) + 1;
-    for (const w of [kill.killer, kill.victim]) {
-      if (w && !map.verified_players.includes(w)) map.verified_players.push(w);
-    }
-    map.stats.unique_verified_players = map.verified_players.length;
-
-    // Credit the reward ledger — creator earns from activity, killer earns a small reward.
-    getLedger(db, map.creator).creator_points += CREATOR_POINTS_PER_KILL;
-    map.reward_stats.creator_points = (map.reward_stats.creator_points || 0) + CREATOR_POINTS_PER_KILL;
-    getLedger(db, kill.killer).player_points += PLAYER_POINTS_PER_KILL;
-
-    if (killer) killer.stats.kills = (killer.stats.kills || 0) + 1;
-    if (victim) victim.stats.deaths = (victim.stats.deaths || 0) + 1;
-  }
-
   await write(db);
-  res.json({ counted: verdict.counted, reasons: verdict.reasons, score: verdict.score, kill });
+  res.json({ counted: result.counted, reasons: result.reasons, score: result.score, credited: result.credited, kill: result.kill });
 });
 
 // ---------------------------------------------------------------------------
-// Rewards: view ledger + claim (batched, from Treasury / Creator-Rewards wallet)
+// Creator Reward Ledger view. Creators do NOT claim manually — the ledger settles
+// on a 5-minute schedule (see settlement loop). This endpoint is read-only.
 // ---------------------------------------------------------------------------
-function rewardsView(db, wallet) {
-  const w = trim(wallet);
-  const ledger = db.ledger[w] || { wallet: w, creator_points: 0, player_points: 0, creator_claimed: 0, player_claimed: 0 };
-  const myMaps = Object.values(db.maps).filter((m) => m.creator === w);
-  const unlocked = myMaps.some(creatorUnlocked);
-  const nextMap = myMaps
-    .filter((m) => !creatorUnlocked(m))
-    .sort((a, b) => b.stats.verified_kills - a.stats.verified_kills)[0];
-  return {
-    wallet: w,
-    creator_points: ledger.creator_points,
-    player_points: ledger.player_points,
-    creator_claimed: ledger.creator_claimed,
-    player_claimed: ledger.player_claimed,
-    creator_sol: pointsToSol(ledger.creator_points),
-    player_sol: pointsToSol(ledger.player_points),
-    creator_unlocked: unlocked,
-    points_per_sol: POINTS_PER_SOL,
-    min_creator_claim_points: MIN_CREATOR_CLAIM_POINTS,
-    min_player_claim_points: MIN_PLAYER_CLAIM_POINTS,
-    maps: myMaps.map((m) => ({
-      map_id: m.map_id,
-      title: m.title,
-      verified_kills: m.stats.verified_kills,
-      unique_verified_players: m.stats.unique_verified_players,
-      creator_points: m.reward_stats?.creator_points || 0,
-      unlocked: creatorUnlocked(m),
-    })),
-    unlock_progress: nextMap
-      ? {
-          map_id: nextMap.map_id,
-          title: nextMap.title,
-          players: nextMap.stats.unique_verified_players,
-          players_needed: ANTIFARM.CREATOR_MIN_UNIQUE_PLAYERS,
-          kills: nextMap.stats.verified_kills,
-          kills_needed: ANTIFARM.CREATOR_MIN_VERIFIED_KILLS,
-        }
-      : null,
-  };
+function activeMatchesFor(db, wallet) {
+  const counts = getRoomCounts();
+  return Object.values(db.maps).filter((m) => m.creator === wallet && (counts[m.map_id] || 0) > 0).length;
 }
 
 app.get("/api/rewards/:wallet", (req, res) => {
   const db = read();
-  res.json(rewardsView(db, req.params.wallet));
-});
-
-app.post("/api/rewards/claim", async (req, res) => {
-  const db = read();
-  const wallet = trim(req.body?.wallet);
-  const type = req.body?.type === "creator" ? "creator" : "player";
-  if (!isValidPublicKey(wallet)) return res.status(400).json({ error: "valid Solana payout wallet required" });
-
-  const ledger = getLedger(db, wallet);
-
-  if (type === "creator") {
-    const unlocked = Object.values(db.maps).some((m) => m.creator === wallet && creatorUnlocked(m));
-    if (!unlocked)
-      return res.status(400).json({
-        error: `creator rewards unlock at ${ANTIFARM.CREATOR_MIN_UNIQUE_PLAYERS}+ unique verified players and ${ANTIFARM.CREATOR_MIN_VERIFIED_KILLS}+ verified kills on a map`,
-      });
-    if (ledger.creator_points < MIN_CREATOR_CLAIM_POINTS)
-      return res.status(400).json({ error: `need at least ${MIN_CREATOR_CLAIM_POINTS} creator points to claim` });
-
-    const points = ledger.creator_points;
-    const amount = pointsToSol(points);
-    if (amount <= 0) return res.status(400).json({ error: "nothing to claim yet" });
-    let t;
-    try {
-      t = await tx(db, { type: "creator_reward", wallet, amount, points, source: "rewards", meta: { kind: "creator" } });
-    } catch (e) {
-      return res.status(502).json({ error: "on-chain reward payout failed: " + e.message });
-    }
-    ledger.creator_points = 0;
-    ledger.creator_claimed += points;
-    db.treasury.rewards = Math.max(0, db.treasury.rewards - amount);
-    await write(db);
-    return res.json({ tx: t, rewards: rewardsView(db, wallet) });
-  }
-
-  // player claim
-  if (ledger.player_points < MIN_PLAYER_CLAIM_POINTS)
-    return res.status(400).json({ error: `need at least ${MIN_PLAYER_CLAIM_POINTS} player points to claim` });
-  const points = ledger.player_points;
-  const amount = pointsToSol(points);
-  if (amount <= 0) return res.status(400).json({ error: "nothing to claim yet" });
-  let t;
-  try {
-    t = await tx(db, { type: "player_reward", wallet, amount, points, source: "treasury", meta: { kind: "player" } });
-  } catch (e) {
-    return res.status(502).json({ error: "on-chain reward payout failed: " + e.message });
-  }
-  ledger.player_points = 0;
-  ledger.player_claimed += points;
-  db.treasury.balance = Math.max(0, db.treasury.balance - amount);
-  await write(db);
-  res.json({ tx: t, rewards: rewardsView(db, wallet) });
+  res.json(rewardsView(db, trim(req.params.wallet), activeMatchesFor(db, trim(req.params.wallet))));
 });
 
 // ---------------------------------------------------------------------------
@@ -570,12 +420,40 @@ app.use((err, req, res, next) => {
   res.status(err?.status || 500).json({ error: "Internal server error" });
 });
 
+// ---------------------------------------------------------------------------
+// Reward Ledger Settlement — every SETTLEMENT_MS, validate pending balances and
+// move pending -> settled (paying on-chain in LIVE mode). The ledger is the source
+// of truth; this is the only place rewards leave the ledger.
+// ---------------------------------------------------------------------------
+let settling = false;
+async function runSettlement() {
+  if (settling) return;
+  settling = true;
+  try {
+    const db = read();
+    const n = await settle(db, (args) => tx(db, args));
+    await write(db);
+    if (n > 0) console.log(`[settlement] settled ${n} creator ledger(s)`);
+  } catch (e) {
+    console.error("[settlement] error:", e.message);
+  } finally {
+    settling = false;
+  }
+}
+
+const server = http.createServer(app);
+initRealtime(server, [...ALLOWED_ORIGINS]);
+
 init()
   .then((mode) => {
-    app.listen(PORT, () => {
+    const db = read();
+    db.settlement = { last: Date.now(), next: Date.now() + REWARD.SETTLEMENT_MS };
+    server.listen(PORT, () => {
       console.log(`[killmaps] server on http://localhost:${PORT}`);
       console.log(`[db] storage backend: ${mode}${mode === "file" ? " (ephemeral — set DATABASE_URL for persistence)" : " (persistent)"}`);
+      console.log(`[rewards] settlement every ${Math.round(REWARD.SETTLEMENT_MS / 1000)}s · $${REWARD.PER_KILL}/validated kill · daily cap $${REWARD.DAILY_CAP}`);
       logStartup();
+      setInterval(runSettlement, REWARD.SETTLEMENT_MS);
     });
   })
   .catch((e) => {

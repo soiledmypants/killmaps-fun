@@ -6,6 +6,7 @@ export interface FeedItem {
   killer: string;
   victim: string;
   weapon: string;
+  head?: boolean;
   self?: boolean;
 }
 

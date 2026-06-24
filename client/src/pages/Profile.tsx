@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { usePlayer } from "../lib/player";
 import { api } from "../lib/api";
 import type { RewardsView } from "../lib/types";
@@ -70,13 +71,14 @@ export default function Profile() {
       </div>
 
       <div className="panel p-6">
-        <h2 className="font-bold text-white mb-4">Rewards earned</h2>
+        <h2 className="font-bold text-white mb-4">Creator Reward Ledger</h2>
         <div className="grid grid-cols-2 gap-3">
-          <Stat label="Creator claimed" value={`${(rewards?.creator_claimed ?? 0).toLocaleString()} pts`} />
-          <Stat label="Player claimed" value={`${(rewards?.player_claimed ?? 0).toLocaleString()} pts`} />
-          <Stat label="Creator points" value={`${(rewards?.creator_points ?? 0).toLocaleString()}`} accent />
-          <Stat label="Player points" value={`${(rewards?.player_points ?? 0).toLocaleString()}`} accent />
+          <Stat label="Ledger Balance" value={`$${(rewards?.balance ?? 0).toFixed(2)}`} accent />
+          <Stat label="Pending Settlement" value={`$${(rewards?.pending ?? 0).toFixed(2)}`} />
+          <Stat label="Validated Kills" value={rewards?.validated_kills ?? 0} />
+          <Stat label="Lifetime Settled" value={`$${(rewards?.lifetime_settled ?? 0).toFixed(2)}`} accent />
         </div>
+        <Link to="/dashboard" className="btn w-full mt-4 h-9 text-xs">Open creator dashboard</Link>
       </div>
 
       {modal && <IdentityModal onClose={() => setModal(false)} />}

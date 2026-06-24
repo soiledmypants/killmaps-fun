@@ -145,6 +145,17 @@ export function AssetMesh({ object, selected = false, ghost = false }: { object:
             <cylinderGeometry args={[0.06, 0.06, 2.4, 6]} />
             <meshBasicMaterial color={mc} transparent opacity={0.35} />
           </mesh>
+          {/* facing arrow (points +Z; rotate the spawn to aim it toward the combat area) */}
+          <group position={[0, -h / 2 + 0.05, 0.7]}>
+            <mesh position={[0, 0, -0.25]} rotation={[-Math.PI / 2, 0, 0]}>
+              <boxGeometry args={[0.12, 0.5, 0.04]} />
+              <meshBasicMaterial color={mc} />
+            </mesh>
+            <mesh rotation={[Math.PI / 2, 0, 0]}>
+              <coneGeometry args={[0.18, 0.32, 4]} />
+              <meshBasicMaterial color={mc} />
+            </mesh>
+          </group>
         </group>
       );
       break;

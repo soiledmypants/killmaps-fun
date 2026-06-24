@@ -6,6 +6,7 @@ import Home from "./pages/Home";
 import PlayMaps from "./pages/PlayMaps";
 import CreateMap from "./pages/CreateMap";
 import Game from "./pages/Game";
+import PreMatch from "./pages/PreMatch";
 import Loadout from "./pages/Loadout";
 import Dashboard from "./pages/Dashboard";
 import Transactions from "./pages/Transactions";
@@ -24,6 +25,7 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/create" element={<CreateMap />} />
         <Route path="/edit/:id" element={<CreateMap />} />
+        <Route path="/play/:id" element={<PreMatch />} />
         <Route path="/game/:id" element={<Game />} />
         <Route
           path="*"

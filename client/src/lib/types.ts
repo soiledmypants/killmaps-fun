@@ -65,7 +65,10 @@ export interface GameMap {
     health: number;
     armor: number;
     reserve_mult?: number;
+    npc_count?: number;
   };
+  active_players?: number;
+  max_players?: number;
   map_config?: unknown;
   published: boolean;
   test_mode?: boolean;
@@ -104,32 +107,32 @@ export interface Transaction {
 
 export interface RewardsView {
   wallet: string;
-  creator_points: number;
-  player_points: number;
-  creator_claimed: number;
-  player_claimed: number;
-  creator_sol: number;
-  player_sol: number;
-  creator_unlocked: boolean;
-  points_per_sol: number;
-  min_creator_claim_points: number;
-  min_player_claim_points: number;
+  balance: number; // settled "Ledger Balance" (USD)
+  pending: number; // awaiting next settlement
+  lifetime_settled: number;
+  validated_kills: number;
+  unique_players_today: number;
+  activity_score: number;
+  active_matches: number;
+  next_settlement_ms: number;
+  settlement_interval_ms: number;
+  daily_cap: number;
+  daily_pending: number;
+  flagged: boolean;
   maps: {
     map_id: string;
     title: string;
-    verified_kills: number;
-    unique_verified_players: number;
-    creator_points: number;
-    unlocked: boolean;
+    validated_kills: number;
+    unique_players: number;
+    plays: number;
+    total_kills: number;
   }[];
-  unlock_progress: {
-    map_id: string;
-    title: string;
-    players: number;
-    players_needed: number;
-    kills: number;
-    kills_needed: number;
-  } | null;
+}
+
+export interface Loadout {
+  primary: string;
+  secondary: string;
+  armor: "none" | "armor" | "helmet";
 }
 
 export interface PublicConfig {
@@ -139,15 +142,14 @@ export interface PublicConfig {
   minTokens: number;
   verifyLive: boolean;
   devVerifyOff: boolean;
+  maxPlayers?: number;
+  rewardPerKill?: number;
+  settlementIntervalMs?: number;
+  dailyCreatorCap?: number;
   onchain: boolean;
   rpcConfigured: boolean;
   treasuryWallet: string | null;
   rewardsWallet: string | null;
-  pointsPerSol: number;
-  creatorPointsPerKill: number;
-  playerPointsPerKill: number;
-  minCreatorClaimPoints: number;
-  minPlayerClaimPoints: number;
   antifarm: {
     spawnProtectionMs: number;
     minMatchMs: number;

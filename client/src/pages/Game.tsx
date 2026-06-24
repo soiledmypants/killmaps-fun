@@ -7,6 +7,7 @@ import { useGame } from "../lib/gameStore";
 import { WEAPONS, resolveRules } from "../lib/fps";
 import { FPSScene } from "../three/FPSScene";
 import { sound, unlockAudio } from "../lib/sound";
+import { useNet } from "../lib/net";
 import { Target, X } from "../components/icons";
 import { VerifyBadge } from "../components/IdentityModal";
 
@@ -139,6 +140,7 @@ export default function Game() {
           <div className="panel px-3 py-1.5 flex items-center gap-3">
             <span className="font-bold text-white text-sm truncate max-w-[160px]">{map.title}</span>
             {test && <span className="chip border-accent/50 text-accent">Test</span>}
+            <PlayerCount mapId={map.map_id} />
           </div>
           <div className="panel px-5 py-1.5 font-mono text-2xl text-white tabular-nums">
             {String(Math.floor(game.timeLeft / 60)).padStart(2, "0")}:{String(game.timeLeft % 60).padStart(2, "0")}
@@ -156,6 +158,7 @@ export default function Game() {
             <div key={f.id} className="panel px-2.5 py-1 flex items-center gap-2">
               <span className={f.killer === "You" ? "text-verify font-semibold" : "text-steel"}>{f.killer}</span>
               <span className="text-steel/50 text-xs uppercase">{f.weapon}</span>
+              {f.head && <span className="text-kill text-[10px] font-bold uppercase tracking-wider">Headshot</span>}
               <Target size={12} className="text-kill" />
               <span className={f.victim === "You" ? "text-kill font-semibold" : "text-steel"}>{f.victim}</span>
             </div>
@@ -222,6 +225,13 @@ export default function Game() {
       )}
     </div>
   );
+}
+
+function PlayerCount({ mapId }: { mapId: string }) {
+  const counts = useNet((s) => s.counts);
+  const max = useNet((s) => s.maxPlayers);
+  const active = counts[mapId] || 0;
+  return <span className="chip border-base-500 text-steel font-mono">{active} / {max}</span>;
 }
 
 function Overlay({ children }: { children: React.ReactNode }) {

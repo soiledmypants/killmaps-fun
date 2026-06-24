@@ -32,7 +32,9 @@ const DEFAULT_DB = {
   transactions: [],
   // Anti-farm / admin suspicious-activity log.
   flags: [],
-  // Treasury funds player payouts; rewards pool funds creator reward claims.
+  // Reward Ledger Settlement schedule (timestamps in ms).
+  settlement: { last: 0, next: 0 },
+  // Treasury funds player payouts; rewards pool funds creator reward settlements.
   treasury: { balance: 0, rewards: 0 },
 };
 
@@ -109,6 +111,7 @@ export function read() {
   if (!cache.ledger) cache.ledger = {};
   if (!Array.isArray(cache.transactions)) cache.transactions = [];
   if (!Array.isArray(cache.flags)) cache.flags = [];
+  if (!cache.settlement) cache.settlement = { last: 0, next: 0 };
   if (!cache.treasury) cache.treasury = { balance: 0, rewards: 0 };
   return cache;
 }

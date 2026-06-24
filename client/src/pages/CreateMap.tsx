@@ -345,7 +345,8 @@ function MapSettings({ map, onMeta }: { map: any; onMeta: (p: any) => void }) {
 
 function MatchRules({ map, onMeta }: { map: any; onMeta: (p: any) => void }) {
   const r = resolveRules(map);
-  const setRules = (patch: any) => onMeta({ rules: { ...r, ...patch } });
+  const npc = map.rules?.npc_count ?? 3;
+  const setRules = (patch: any) => onMeta({ rules: { ...r, npc_count: npc, ...patch } });
   const toggleWeapon = (id: string) => {
     const has = r.allowed_weapons.includes(id);
     let allowed = has ? r.allowed_weapons.filter((w: string) => w !== id) : [...r.allowed_weapons, id];
@@ -371,7 +372,7 @@ function MatchRules({ map, onMeta }: { map: any; onMeta: (p: any) => void }) {
           <option key={id} value={id}>{WEAPONS[id].name}</option>
         ))}
       </select>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-3 gap-2">
         <div>
           <div className="label text-[9px] mb-1">Health</div>
           <input type="number" className="input py-1 text-xs" value={r.health} min={1} onChange={(e) => setRules({ health: parseInt(e.target.value) || 100 })} />
@@ -380,7 +381,12 @@ function MatchRules({ map, onMeta }: { map: any; onMeta: (p: any) => void }) {
           <div className="label text-[9px] mb-1">Armor</div>
           <input type="number" className="input py-1 text-xs" value={r.armor} min={0} onChange={(e) => setRules({ armor: parseInt(e.target.value) || 0 })} />
         </div>
+        <div>
+          <div className="label text-[9px] mb-1">NPCs</div>
+          <input type="number" className="input py-1 text-xs" value={npc} min={0} max={8} onChange={(e) => setRules({ npc_count: Math.max(0, Math.min(8, parseInt(e.target.value) || 0)) })} />
+        </div>
       </div>
+      <p className="text-[10px] text-steel/60 mt-2 leading-relaxed">NPCs are test targets only — the real game is PvP. Rotate spawn points (R) to set which way players face.</p>
     </div>
   );
 }

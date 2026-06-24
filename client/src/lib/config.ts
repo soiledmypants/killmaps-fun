@@ -8,8 +8,10 @@ export const SOCIALS = {
   pumpfun:
     (import.meta.env.VITE_PUMPFUN_URL as string | undefined)?.trim() ||
     (TOKEN_CA ? `https://pump.fun/coin/${TOKEN_CA}` : ""),
-  twitter: (import.meta.env.VITE_TWITTER_URL as string | undefined)?.trim() || "",
+  twitter: (import.meta.env.VITE_TWITTER_URL as string | undefined)?.trim() || "https://x.com/PumpStrike_Fun",
 };
+
+export const BRAND = "PumpStrike";
 
 export const MIN_TOKENS_DISPLAY = 250000;
 

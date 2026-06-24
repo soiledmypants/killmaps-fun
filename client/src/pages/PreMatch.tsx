@@ -1,0 +1,126 @@
+import { useEffect, useRef, useState } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import { Canvas, useFrame } from "@react-three/fiber";
+import * as THREE from "three";
+import { api } from "../lib/api";
+import type { GameMap, Loadout } from "../lib/types";
+import { Fighter, PALETTES } from "../three/Fighter";
+import { useLoadout } from "../lib/loadout";
+import { usePlayer } from "../lib/player";
+import { WEAPONS } from "../lib/fps";
+import { sound } from "../lib/sound";
+import { Target, Shield, Play, Wrench } from "../components/icons";
+import { Nav } from "../components/Nav";
+
+const PRIMARIES = ["m4", "ak", "mp5"];
+const SECONDARIES = ["glock", "deagle"];
+const ARMORS: { id: Loadout["armor"]; label: string }[] = [
+  { id: "none", label: "No Armor" },
+  { id: "armor", label: "Armor" },
+  { id: "helmet", label: "Armor + Helmet" },
+];
+
+function Preview({ weapon }: { weapon: string }) {
+  const g = useRef<THREE.Group>(null);
+  useFrame((s, dt) => { if (g.current) g.current.rotation.y += dt * 0.4; });
+  return (
+    <Canvas shadows camera={{ position: [0, 1.4, 3.8], fov: 42 }} dpr={[1, 2]}>
+      <color attach="background" args={["#17120b"]} />
+      <fog attach="fog" args={["#17120b", 5, 14]} />
+      <hemisphereLight args={["#cfe0e8", "#3a2c1a", 0.85]} />
+      <directionalLight position={[5, 8, 5]} intensity={1.3} color="#ffe9c2" castShadow />
+      <directionalLight position={[-5, 3, -4]} intensity={0.5} color="#b9893f" />
+      <group ref={g}>
+        <Fighter palette={PALETTES.operator} weapon={weapon} position={[0, 0, 0]} />
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}><ringGeometry args={[0.85, 0.95, 48]} /><meshBasicMaterial color="#f0a72e" transparent opacity={0.5} side={THREE.DoubleSide} /></mesh>
+      </group>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow><planeGeometry args={[40, 40]} /><meshStandardMaterial color="#2a2114" roughness={0.95} /></mesh>
+    </Canvas>
+  );
+}
+
+export default function PreMatch() {
+  const { id } = useParams();
+  const nav = useNavigate();
+  const { loadout, setLoadout } = useLoadout();
+  const { player } = usePlayer();
+  const [map, setMap] = useState<GameMap | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!id) return;
+    const load = () => api.getMap(id).then(setMap).catch(() => setErr("Map not found"));
+    load();
+    const t = setInterval(load, 4000); // live player count
+    return () => clearInterval(t);
+  }, [id]);
+
+  if (err) return <><Nav /><div className="mx-auto max-w-3xl px-4 py-16 text-center text-kill">{err} · <Link to="/play" className="text-accent">back to maps</Link></div></>;
+  if (!map) return <><Nav /><div className="mx-auto max-w-3xl px-4 py-16 text-center text-steel">Loading…</div></>;
+
+  const allowed = map.rules?.allowed_weapons || PRIMARIES.concat(SECONDARIES);
+  const primaries = PRIMARIES.filter((w) => allowed.includes(w));
+  const secondaries = SECONDARIES.filter((w) => allowed.includes(w));
+  const choose = (p: Partial<Loadout>) => { setLoadout(p); sound.ui(); };
+
+  return (
+    <>
+      <Nav />
+      <div className="mx-auto max-w-6xl px-4 py-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h1 className="text-xl font-bold text-white">{map.title}</h1>
+            <p className="text-steel text-sm">by {map.creator_username || "creator"} · <span className="font-mono text-accent">{map.active_players ?? 0} / {map.max_players ?? 16}</span> players</p>
+          </div>
+          <Link to="/play" className="btn h-9 px-3 text-xs">Back</Link>
+        </div>
+
+        <div className="grid lg:grid-cols-[1fr_380px] gap-4">
+          <div className="panel h-[460px] overflow-hidden relative">
+            <Preview weapon={loadout.primary} />
+            <div className="absolute bottom-3 left-3 panel px-3 py-2 bg-base-800/80 backdrop-blur">
+              <div className="label">Operator</div>
+              <div className="font-bold text-white">{player?.username || "Guest"}</div>
+              <div className="text-[11px] text-steel">{WEAPONS[loadout.primary]?.name} · {WEAPONS[loadout.secondary]?.name} · {loadout.armor}</div>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <Section title="Primary" icon={Target}>
+              {primaries.map((w) => <Choice key={w} active={loadout.primary === w} label={WEAPONS[w].name} sub={WEAPONS[w].category} onClick={() => choose({ primary: w })} />)}
+            </Section>
+            <Section title="Secondary" icon={Target}>
+              {secondaries.map((w) => <Choice key={w} active={loadout.secondary === w} label={WEAPONS[w].name} sub="pistol" onClick={() => choose({ secondary: w })} />)}
+            </Section>
+            <Section title="Armor" icon={Shield}>
+              {ARMORS.map((a) => <Choice key={a.id} active={loadout.armor === a.id} label={a.label} onClick={() => choose({ armor: a.id })} />)}
+            </Section>
+
+            <button className="btn btn-accent w-full py-3.5 text-base" onClick={() => { sound.ui(); nav(`/game/${id}`); }}>
+              <Play size={18} /> Join Match
+            </button>
+            <Link to={`/edit/${id}`} className="btn w-full h-9 text-xs"><Wrench size={14} /> View in editor</Link>
+            <p className="text-[11px] text-steel/70 leading-relaxed">Loadout is saved for next time. Real verified kills on this map credit the creator's reward ledger.</p>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function Section({ title, icon: Icon, children }: { title: string; icon: any; children: React.ReactNode }) {
+  return (
+    <div className="panel p-3">
+      <div className="flex items-center gap-2 mb-2"><Icon size={14} className="text-accent" /><span className="label">{title}</span></div>
+      <div className="grid grid-cols-1 gap-1.5">{children}</div>
+    </div>
+  );
+}
+function Choice({ active, label, sub, onClick }: { active: boolean; label: string; sub?: string; onClick: () => void }) {
+  return (
+    <button onClick={onClick} className={`flex items-center justify-between px-3 py-2.5 border transition-colors ${active ? "border-accent bg-accent/15 text-accent" : "border-base-500 bg-base-700 text-steel hover:bg-base-600 hover:text-white"}`}>
+      <span className="font-semibold">{label}</span>
+      {sub && <span className="text-[10px] uppercase tracking-wider opacity-70">{sub}</span>}
+    </button>
+  );
+}

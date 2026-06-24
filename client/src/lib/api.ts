@@ -102,10 +102,11 @@ export const api = {
   endMatch: (match_id: string): Promise<unknown> => request(`/matches/${match_id}/end`, jsonInit("POST", {})),
   recordKill: (body: Record<string, unknown>): Promise<KillResult> => request("/kills/record", jsonInit("POST", body)),
 
-  // ---- rewards ----
+  // ---- rewards (read-only — the ledger settles automatically every 5 min) ----
   rewards: (wallet: string): Promise<RewardsView> => request(`/rewards/${wallet}`),
-  claim: (wallet: string, type: "creator" | "player"): Promise<{ tx: Transaction; rewards: RewardsView }> =>
-    request("/rewards/claim", jsonInit("POST", { wallet, type })),
+
+  // ---- live room counts ----
+  rooms: (): Promise<{ counts: Record<string, number>; maxPlayers: number }> => request("/rooms"),
 
   transactions: (): Promise<Transaction[]> => request("/transactions"),
   leaderboard: (): Promise<{ wallet: string; username: string | null; verified_kills: number; unique_players: number; maps: number }[]> =>

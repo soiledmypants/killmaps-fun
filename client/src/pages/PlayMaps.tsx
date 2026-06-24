@@ -74,12 +74,16 @@ export default function PlayMaps() {
               <div className="relative aspect-video bg-base-900 border-b border-base-500">
                 <MapThumb map={m} className="w-full h-full" />
                 <div className="absolute inset-0 bg-gradient-to-t from-base-900/80 to-transparent" />
+                <span className="absolute top-2 right-2 chip border-base-500 bg-base-900/70 font-mono text-steel">
+                  <span className={`w-1.5 h-1.5 rounded-full ${(m.active_players ?? 0) > 0 ? "bg-verify animate-pulse" : "bg-base-400"}`} />
+                  {m.active_players ?? 0} / {m.max_players ?? 16}
+                </span>
                 <Link
-                  to={`/game/${m.map_id}`}
+                  to={`/play/${m.map_id}`}
                   className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-base-900/40"
                 >
                   <span className="btn btn-accent">
-                    <Play size={16} /> Drop In
+                    <Play size={16} /> Play
                   </span>
                 </Link>
               </div>

@@ -44,7 +44,7 @@ export default function Home() {
       <aside className="absolute left-4 top-20 bottom-28 w-72 hidden lg:flex flex-col gap-3 overflow-y-auto scroll-thin pr-1">
         <Panel title="Featured Arena" icon={Target}>
           {featured ? (
-            <Link to={`/game/${featured.map_id}`} className="block group">
+            <Link to={`/play/${featured.map_id}`} className="block group">
               <div className="aspect-video bg-base-900 border border-base-500 overflow-hidden relative">
                 <MapThumb map={featured} className="w-full h-full" />
                 <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-base-900/50 transition-opacity">
@@ -63,7 +63,7 @@ export default function Home() {
           {maps.length ? (
             <div className="space-y-1.5">
               {maps.slice(0, 4).map((m) => (
-                <Link key={m.map_id} to={`/game/${m.map_id}`} className="flex items-center gap-2 group">
+                <Link key={m.map_id} to={`/play/${m.map_id}`} className="flex items-center gap-2 group">
                   <div className="w-12 h-9 bg-base-900 border border-base-500 overflow-hidden shrink-0">
                     <MapThumb map={m} className="w-full h-full" />
                   </div>
