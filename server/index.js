@@ -51,7 +51,8 @@ app.use(
 );
 app.use(express.json({ limit: "12mb" }));
 
-const PORT = process.env.PORT || 8787;
+// Local-dev default is 9001 (Boss.fun/course-fun owns 8787). Render overrides via PORT.
+const PORT = process.env.PORT || 9001;
 
 // ---------------------------------------------------------------------------
 // Helpers

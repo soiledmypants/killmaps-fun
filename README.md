@@ -25,7 +25,7 @@ removed from the Boss.fun / `course-fun` foundation) and [ASSET_CREDITS.md](ASSE
 
 ```bash
 npm run install:all     # installs root, client, server deps
-npm run dev             # server (:8787) + client (:5173)
+npm run dev             # server (:9001) + client (:5173)
 ```
 
 Open http://localhost:5173. With no RPC/keys configured the server runs in **MOCK mode**:
