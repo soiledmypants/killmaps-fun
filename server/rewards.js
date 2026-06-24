@@ -118,6 +118,15 @@ export function recordValidatedKill(db, ctx) {
     if (db.flags.length > 5000) db.flags.splice(0, db.flags.length - 5000);
   }
 
+  // Readable per-kill server log for reward debugging.
+  const matchMs = match ? now - match.started_at : null;
+  console.log(
+    `[kill] killer=${kill.killer || "?"} victim=${kill.victim || "(npc/unregistered)"} creator=${kill.creator || "?"} ` +
+    `counted=${counted} credited=${credited} SOL` +
+    (counted ? "" : ` reasons=[${kill.reasons.join(", ")}]`) +
+    ` matchMs=${matchMs} sameWallet=${kill.killer && kill.killer === kill.victim} sameIp=${!!(killerIp && victimIp && killerIp === victimIp)} score=${verdict.score}`
+  );
+
   return { counted, reasons: kill.reasons, score: verdict.score, kill, credited };
 }
 
@@ -129,7 +138,9 @@ export function recordValidatedKill(db, ctx) {
  * Returns the number of creators settled.
  */
 export async function settle(db, recordTx) {
+  const attemptAt = Date.now();
   let settled = 0;
+  let lastError = null;
   for (const L of Object.values(db.ledger)) {
     if (L.flagged || !(L.pending > 0)) continue;
     if (!isValidPublicKey(L.wallet)) continue;
@@ -139,8 +150,13 @@ export async function settle(db, recordTx) {
       // source "treasury" -> signed by TREASURY_WALLET_PRIVATE_KEY
       tx = await recordTx({ type: "settlement", wallet: L.wallet, amount, source: "treasury", meta: { kind: "creator", paid_by: "treasury" } });
     } catch (e) {
-      // on-chain settlement failed — keep pending, retry next cycle
-      console.error(`[settlement] failed for ${L.wallet}: ${e.message}`);
+      // on-chain settlement failed — KEEP pending (retry next cycle) and surface it.
+      lastError = e.message;
+      console.error(`[settlement] PAYOUT FAILED for ${L.wallet} (${amount} SOL): ${e.message}`);
+      db.transactions.unshift({
+        id: uid("tx"), type: "settlement_failed", wallet: L.wallet, amount, points: null,
+        status: "failed", onchain: false, timestamp: Date.now(), tx_hash: null, error: e.message, paid_by: "treasury",
+      });
       continue;
     }
     L.settled = round(L.settled + amount);
@@ -153,7 +169,7 @@ export async function settle(db, recordTx) {
     db.treasury.total_paid = round((db.treasury.total_paid || 0) + amount);
     void tx;
   }
-  db.settlement = { last: Date.now(), next: Date.now() + REWARD.SETTLEMENT_MS };
+  db.settlement = { last: attemptAt, last_attempt: attemptAt, last_error: lastError, settled_count: settled, next: Date.now() + REWARD.SETTLEMENT_MS };
   return settled;
 }
 

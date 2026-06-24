@@ -379,11 +379,11 @@ function MatchRules({ map, onMeta }: { map: any; onMeta: (p: any) => void }) {
           <input type="number" className="input py-1 text-xs" value={r.armor} min={0} onChange={(e) => setRules({ armor: parseInt(e.target.value) || 0 })} />
         </div>
         <div>
-          <div className="label text-[9px] mb-1">NPCs</div>
-          <input type="number" className="input py-1 text-xs" value={npc} min={0} max={8} onChange={(e) => setRules({ npc_count: Math.max(0, Math.min(8, parseInt(e.target.value) || 0)) })} />
+          <div className="label text-[9px] mb-1">NPCs (0-10)</div>
+          <input type="number" className="input py-1 text-xs" value={npc} min={0} max={10} onChange={(e) => setRules({ npc_count: Math.max(0, Math.min(10, parseInt(e.target.value) || 0)) })} />
         </div>
       </div>
-      <p className="text-[10px] text-steel/60 mt-2 leading-relaxed">NPCs are test targets only — the real game is PvP. Rotate spawn points (R) to set which way players face.</p>
+      <p className="text-[10px] text-steel/60 mt-2 leading-relaxed">NPCs are practice targets only and pay 0 SOL — the real game is PvP. Rotate spawn points (R) to set which way players face.</p>
     </div>
   );
 }

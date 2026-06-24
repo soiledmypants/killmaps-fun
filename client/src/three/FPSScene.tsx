@@ -80,7 +80,7 @@ function Arena({ map, cbs }: { map: GameMap; cbs: Cbs }) {
   const lights = useMemo(() => map.objects.filter((o) => o.kind === "light"), [map]);
   const worldObjects = useMemo(() => map.objects.filter((o) => o.kind !== "light" && !isPickup(o.kind)), [map]);
   const pickupObjs = useMemo(() => map.objects.filter((o) => isPickup(o.kind)), [map]);
-  const npcCount = Math.max(0, Math.min(8, map.rules?.npc_count ?? 3));
+  const npcCount = Math.max(0, Math.min(10, map.rules?.npc_count ?? 3));
 
   const { wallet, username } = usePlayer();
   const loadout = useLoadout((s) => s.loadout);
@@ -403,13 +403,18 @@ function Arena({ map, cbs }: { map: GameMap; cbs: Cbs }) {
       const res = resolveHorizontal(solids, [p.pos.x, p.pos.y, p.pos.z], p.pos.y, p.pos.y + height);
       p.pos.x = Math.max(bounds.min[0], Math.min(bounds.max[0], res[0]));
       p.pos.z = Math.max(bounds.min[2], Math.min(bounds.max[2], res[2]));
-      const ground = sampleGround(solids, p.pos.x, p.pos.z);
       if (keys.current["Space"] && p.onGround) { p.velY = PLAYER.jump; p.onGround = false; sound.jump(); }
-      p.velY += PLAYER.gravity * dt; p.pos.y += p.velY * dt;
-      if (ground > -Infinity && p.pos.y <= ground + 0.001 && p.velY <= 0) {
+      p.velY += PLAYER.gravity * dt;
+      p.pos.y += p.velY * dt;
+      // Support surface at/below the feet (ignores overhead platforms). Stick to it
+      // within step height so the player follows ramps/stairs smoothly up AND down.
+      const ground = sampleGround(solids, p.pos.x, p.pos.z, p.pos.y, PLAYER.step);
+      if (ground > -Infinity && p.velY <= 0 && p.pos.y <= ground + PLAYER.step) {
         if (!p.wasGround && p.velY < -6) sound.land();
         p.pos.y = ground; p.velY = 0; p.onGround = true;
-      } else if (p.pos.y > ground + 0.05) p.onGround = false;
+      } else {
+        p.onGround = false;
+      }
       p.wasGround = p.onGround;
       if (p.pos.y < -25) respawnPlayer();
 
@@ -478,7 +483,7 @@ function Arena({ map, cbs }: { map: GameMap; cbs: Cbs }) {
       const bspeed = engaged ? 3.6 : 2.6;
       const r = resolveHorizontal(solids, [b.pos.x + mv.x * bspeed * dt, b.pos.y, b.pos.z + mv.z * bspeed * dt], b.pos.y, b.pos.y + 1.7);
       b.pos.x = Math.max(bounds.min[0], Math.min(bounds.max[0], r[0])); b.pos.z = Math.max(bounds.min[2], Math.min(bounds.max[2], r[2]));
-      const bg = sampleGround(solids, b.pos.x, b.pos.z); b.pos.y = bg > -Infinity ? bg : b.pos.y;
+      const bg = sampleGround(solids, b.pos.x, b.pos.z, b.pos.y + 0.6, 1.0); b.pos.y = bg > -Infinity ? bg : b.pos.y;
       b.state.moving = (Math.abs(mv.x) + Math.abs(mv.z)) > 0.1; b.state.aiming = engaged;
       b.yaw = engaged ? Math.atan2(p.pos.x - b.pos.x, p.pos.z - b.pos.z) : Math.atan2(mv.x, mv.z);
       if (g) { g.position.copy(b.pos); g.rotation.y = b.yaw; }

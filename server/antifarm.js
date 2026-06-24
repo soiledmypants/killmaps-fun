@@ -3,24 +3,38 @@
 // trivially farmable. Tunables can be overridden via env where it makes sense.
 import { MIN_TOKENS } from "./solana.js";
 
+// REWARD_MODE selects the anti-farm threshold profile. "testing" relaxes the strict
+// launch thresholds so rewards are easy to earn while testing — anti-farm stays ON
+// (different wallets, no self-farm, cooldowns, movement, IP/device checks all remain).
+// Default is "testing" until explicitly switched to "launch".
+export const REWARD_MODE = (process.env.REWARD_MODE || "testing").toLowerCase() === "launch" ? "launch" : "testing";
+
+const PROFILES = {
+  testing: { SPAWN_PROTECTION_MS: 2000, MIN_MATCH_MS: 10000, PAIR_COOLDOWN_MS: 10000, PAIR_DAILY_CAP: 20, MIN_KILLER_DISTANCE: 10, CREATOR_MIN_UNIQUE_PLAYERS: 1, CREATOR_MIN_VERIFIED_KILLS: 1 },
+  launch: { SPAWN_PROTECTION_MS: 3000, MIN_MATCH_MS: 60000, PAIR_COOLDOWN_MS: 60000, PAIR_DAILY_CAP: 10, MIN_KILLER_DISTANCE: 40, CREATOR_MIN_UNIQUE_PLAYERS: 50, CREATOR_MIN_VERIFIED_KILLS: 250 },
+};
+const P = PROFILES[REWARD_MODE];
+// An explicit env var wins; otherwise the mode profile value is used.
+const envNum = (name, fallback) => (process.env[name] != null && process.env[name] !== "" ? Number(process.env[name]) : fallback);
+
 export const ANTIFARM = {
   // Reject kills within this window of the victim's spawn (anti spawn-camp / instant kill).
-  SPAWN_PROTECTION_MS: Number(process.env.AF_SPAWN_PROTECTION_MS) || 3000,
+  SPAWN_PROTECTION_MS: envNum("SPAWN_PROTECTION_MS", envNum("AF_SPAWN_PROTECTION_MS", P.SPAWN_PROTECTION_MS)),
   // A match must last at least this long before any of its kills can count.
-  MIN_MATCH_MS: Number(process.env.AF_MIN_MATCH_MS) || 60000,
+  MIN_MATCH_MS: envNum("MIN_MATCH_MS", envNum("AF_MIN_MATCH_MS", P.MIN_MATCH_MS)),
   // Minimum gap between rewarded kills for the SAME killer->victim pair.
-  PAIR_COOLDOWN_MS: Number(process.env.AF_PAIR_COOLDOWN_MS) || 60000,
+  PAIR_COOLDOWN_MS: envNum("PAIR_COOLDOWN_MS", envNum("AF_PAIR_COOLDOWN_MS", P.PAIR_COOLDOWN_MS)),
   // Max rewarded kills for the same killer->victim pair per rolling 24h.
-  PAIR_DAILY_CAP: Number(process.env.AF_PAIR_DAILY_CAP) || 10,
+  PAIR_DAILY_CAP: envNum("PAIR_DAILY_CAP", envNum("AF_PAIR_DAILY_CAP", P.PAIR_DAILY_CAP)),
   // Killer must have moved at least this far (world units) in the match.
-  MIN_KILLER_DISTANCE: Number(process.env.AF_MIN_KILLER_DISTANCE) || 40,
-  // Physically impossible ceilings — anything above is a cheat/bot signal.
-  MAX_FIRE_RATE: Number(process.env.AF_MAX_FIRE_RATE) || 20, // shots / sec
-  MAX_MOVE_SPEED: Number(process.env.AF_MAX_MOVE_SPEED) || 18, // units / sec
-  MAX_ACCURACY: Number(process.env.AF_MAX_ACCURACY) || 0.98, // sustained hit ratio
+  MIN_KILLER_DISTANCE: envNum("MIN_KILLER_DISTANCE", envNum("AF_MIN_KILLER_DISTANCE", P.MIN_KILLER_DISTANCE)),
+  // Physically impossible ceilings — anything above is a cheat/bot signal (mode-independent).
+  MAX_FIRE_RATE: envNum("AF_MAX_FIRE_RATE", 20), // shots / sec
+  MAX_MOVE_SPEED: envNum("AF_MAX_MOVE_SPEED", 18), // units / sec
+  MAX_ACCURACY: envNum("AF_MAX_ACCURACY", 0.98), // sustained hit ratio
   // Creator reward UNLOCK thresholds (per map).
-  CREATOR_MIN_UNIQUE_PLAYERS: Number(process.env.AF_MIN_UNIQUE_PLAYERS) || 50,
-  CREATOR_MIN_VERIFIED_KILLS: Number(process.env.AF_MIN_VERIFIED_KILLS) || 250,
+  CREATOR_MIN_UNIQUE_PLAYERS: envNum("CREATOR_MIN_UNIQUE_PLAYERS", envNum("AF_MIN_UNIQUE_PLAYERS", P.CREATOR_MIN_UNIQUE_PLAYERS)),
+  CREATOR_MIN_VERIFIED_KILLS: envNum("CREATOR_MIN_VERIFIED_KILLS", envNum("AF_MIN_VERIFIED_KILLS", P.CREATOR_MIN_VERIFIED_KILLS)),
 };
 
 const DAY_MS = 24 * 60 * 60 * 1000;

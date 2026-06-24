@@ -101,8 +101,10 @@ export interface Transaction {
   status: string;
   onchain: boolean;
   timestamp: number;
-  tx_hash: string;
+  tx_hash: string | null;
   kind?: string;
+  error?: string;
+  paid_by?: string;
 }
 
 export interface RewardsView {

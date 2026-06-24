@@ -2,7 +2,7 @@ import http from "http";
 import express from "express";
 import cors from "cors";
 import { read, write, init, flush } from "./db.js";
-import { ANTIFARM, uid, fakeTxHash } from "./antifarm.js";
+import { ANTIFARM, REWARD_MODE, uid, fakeTxHash } from "./antifarm.js";
 import { recordValidatedKill, rewardsView, settle, treasuryStats, REWARD } from "./rewards.js";
 import { initRealtime, getRoomCounts } from "./realtime.js";
 import {
@@ -122,6 +122,7 @@ function publicConfig() {
     rewardsWallet: solanaConfig.rewardsPublicKey,
     maxPlayers: MAX_PLAYERS,
     currency: "SOL",
+    rewardMode: REWARD_MODE,
     rewardPerKill: REWARD.PER_KILL, // SOL
     settlementIntervalMs: REWARD.SETTLEMENT_MS,
     dailyCreatorCap: REWARD.DAILY_CAP, // SOL
@@ -394,6 +395,56 @@ function activeMatchesFor(db, wallet) {
   return Object.values(db.maps).filter((m) => m.creator === wallet && (counts[m.map_id] || 0) > 0).length;
 }
 
+// Admin/debug reward visibility (defined BEFORE :wallet so "debug" isn't a wallet).
+app.get("/api/rewards/debug", async (_req, res) => {
+  const db = read();
+  const counted = db.kills.filter((k) => k.counted);
+  const rejected = db.kills.filter((k) => !k.counted);
+  const rejectionReasons = {};
+  for (const k of rejected) for (const r of k.reasons || []) rejectionReasons[r] = (rejectionReasons[r] || 0) + 1;
+  const uniquePlayers = new Set();
+  for (const L of Object.values(db.ledger)) for (const w of L.unique_players || []) uniquePlayers.add(w);
+  const treasuryBalance = await getSolBalance(solanaConfig.treasuryPublicKey);
+
+  res.json({
+    rewardMode: REWARD_MODE,
+    currency: "SOL",
+    rewardPerKill: REWARD.PER_KILL,
+    settlementIntervalMs: REWARD.SETTLEMENT_MS,
+    pendingByCreator: Object.values(db.ledger).map((L) => ({
+      wallet: L.wallet, pending: L.pending, lifetime_settled: L.lifetime_settled, last_settlement: L.last_settlement || 0,
+      validated_kills: L.validated_kills, unique_players_today: (L.unique_players || []).length, flagged: !!L.flagged,
+    })),
+    validatedKills: counted.length,
+    rejectedKills: rejected.length,
+    rejectionReasons,
+    uniquePlayers: uniquePlayers.size,
+    recentKills: db.kills.slice(-25).reverse().map((k) => ({
+      killer: k.killer, victim: k.victim || "(npc/unregistered)", creator: k.creator,
+      counted: k.counted, weapon: k.weapon, head: k.head, reasons: k.reasons, score: k.score, timestamp: k.timestamp,
+    })),
+    nextSettlementMs: Math.max(0, (db.settlement?.next || 0) - Date.now()),
+    lastSettlementAttempt: db.settlement?.last_attempt || null,
+    lastSettlementCount: db.settlement?.settled_count ?? null,
+    lastPayoutError: db.settlement?.last_error || null,
+    failedPayouts: db.transactions.filter((t) => t.type === "settlement_failed").slice(0, 25),
+    treasuryWallet: solanaConfig.treasuryPublicKey,
+    treasuryBalance, // on-chain SOL or null
+    onchain: solanaConfig.treasuryLive,
+    verifyLive: solanaConfig.verifyLive,
+    devVerifyOff: solanaConfig.disableTokenVerification,
+    antifarmThresholds: {
+      spawnProtectionMs: ANTIFARM.SPAWN_PROTECTION_MS,
+      minMatchMs: ANTIFARM.MIN_MATCH_MS,
+      pairCooldownMs: ANTIFARM.PAIR_COOLDOWN_MS,
+      pairDailyCap: ANTIFARM.PAIR_DAILY_CAP,
+      minKillerDistance: ANTIFARM.MIN_KILLER_DISTANCE,
+      creatorMinUniquePlayers: ANTIFARM.CREATOR_MIN_UNIQUE_PLAYERS,
+      creatorMinVerifiedKills: ANTIFARM.CREATOR_MIN_VERIFIED_KILLS,
+    },
+  });
+});
+
 app.get("/api/rewards/:wallet", (req, res) => {
   const db = read();
   res.json(rewardsView(db, trim(req.params.wallet), activeMatchesFor(db, trim(req.params.wallet))));
@@ -457,7 +508,8 @@ init()
     server.listen(PORT, () => {
       console.log(`[killmaps] server on http://localhost:${PORT}`);
       console.log(`[db] storage backend: ${mode}${mode === "file" ? " (ephemeral — set DATABASE_URL for persistence)" : " (persistent)"}`);
-      console.log(`[rewards] settlement every ${Math.round(REWARD.SETTLEMENT_MS / 1000)}s · ${REWARD.PER_KILL} SOL/validated kill · daily cap ${REWARD.DAILY_CAP} SOL`);
+      console.log(`[rewards] mode=${REWARD_MODE} · settlement every ${Math.round(REWARD.SETTLEMENT_MS / 1000)}s · ${REWARD.PER_KILL} SOL/validated kill · daily cap ${REWARD.DAILY_CAP} SOL`);
+      console.log(`[rewards] anti-farm: minMatch=${ANTIFARM.MIN_MATCH_MS}ms pairCooldown=${ANTIFARM.PAIR_COOLDOWN_MS}ms unlock=${ANTIFARM.CREATOR_MIN_UNIQUE_PLAYERS}players/${ANTIFARM.CREATOR_MIN_VERIFIED_KILLS}kills`);
       logStartup();
       setInterval(runSettlement, REWARD.SETTLEMENT_MS);
     });

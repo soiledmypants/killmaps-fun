@@ -42,20 +42,26 @@ export default function Transactions() {
           <div className="p-12 text-center text-steel text-sm">No transactions yet. Reward claims will appear here.</div>
         ) : (
           txs.map((t) => {
-            const meta = TYPE_LABEL[t.type] || { label: t.type, cls: "text-steel" };
+            const failed = t.type === "settlement_failed" || t.status === "failed";
+            const meta = failed
+              ? { label: "Payout failed", cls: "text-kill" }
+              : TYPE_LABEL[t.type] || { label: t.type, cls: "text-steel" };
             return (
-              <div key={t.id} className="grid grid-cols-12 px-4 py-3 border-b border-base-600 items-center text-sm hover:bg-base-700/40">
-                <div className={`col-span-3 font-semibold ${meta.cls}`}>{meta.label}</div>
+              <div key={t.id} className={`grid grid-cols-12 px-4 py-3 border-b border-base-600 items-center text-sm hover:bg-base-700/40 ${failed ? "bg-kill/5" : ""}`}>
+                <div className={`col-span-3 font-semibold ${meta.cls}`}>
+                  {meta.label}
+                  {failed && t.error && <div className="text-[10px] text-kill/70 font-normal font-mono truncate">{t.error}</div>}
+                </div>
                 <div className="col-span-3 font-mono text-steel">{shortWallet(t.wallet, 5)}</div>
-                <div className="col-span-2 text-right font-mono text-verify">+{fmtSol(typeof t.amount === "number" ? t.amount : 0)}</div>
-                <div className="col-span-2 text-right font-mono text-steel">{t.status}</div>
+                <div className={`col-span-2 text-right font-mono ${failed ? "text-kill" : "text-verify"}`}>{failed ? "" : "+"}{fmtSol(typeof t.amount === "number" ? t.amount : 0)}</div>
+                <div className={`col-span-2 text-right font-mono ${failed ? "text-kill" : "text-steel"}`}>{t.status}</div>
                 <div className="col-span-2 text-right">
-                  {t.onchain ? (
+                  {t.onchain && t.tx_hash ? (
                     <a href={solscanTx(t.tx_hash, cluster)} target="_blank" rel="noreferrer" className="text-accent hover:underline font-mono text-xs">
                       {shortWallet(t.tx_hash, 4)}
                     </a>
                   ) : (
-                    <span className="text-steel/50 text-xs">recorded</span>
+                    <span className="text-steel/50 text-xs">{failed ? "—" : "recorded"}</span>
                   )}
                 </div>
               </div>

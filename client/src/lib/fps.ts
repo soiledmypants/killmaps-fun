@@ -85,13 +85,20 @@ function surfaceHeight(s: Solid, x: number, z: number): number {
   return s.top;
 }
 
-/** Highest walkable surface under the player within step reach (or -Infinity). */
-export function sampleGround(solids: Solid[], x: number, z: number): number {
+/**
+ * Highest walkable surface that supports a body whose feet are at `feetY`. Surfaces
+ * more than `step` above the feet are ignored (so you don't snap onto a platform
+ * overhead); surfaces below are valid (standing / landing). With feetY=Infinity it
+ * returns the global-highest surface (used for loose ground snapping).
+ */
+export function sampleGround(solids: Solid[], x: number, z: number, feetY = Infinity, step = PLAYER.step): number {
   let g = -Infinity;
+  const ceil = feetY + step;
   for (const s of solids) {
     if (!s.walkable) continue;
     if (!inFootprint(s, x, z, PLAYER.radius * 0.7)) continue;
     const h = surfaceHeight(s, x, z);
+    if (h > ceil) continue; // overhead surface — not standable from here
     if (h > g) g = h;
   }
   return g;
@@ -101,9 +108,12 @@ export function sampleGround(solids: Solid[], x: number, z: number): number {
 export function resolveHorizontal(solids: Solid[], pos: Vec3, feetY: number, bodyTop: number): Vec3 {
   const p: Vec3 = [pos[0], pos[1], pos[2]];
   for (const s of solids) {
+    // Ramps & stairs are walkable SLOPES, never horizontal walls — let the player walk
+    // straight onto/through them; sampleGround() lifts them along the slope.
+    if (s.kind === "ramp" || s.kind === "stairs") continue;
     // vertical overlap with body?
     if (s.bottom > bodyTop || s.top < feetY + 0.05) continue;
-    // walkable & low enough to step onto -> not a wall
+    // walkable & low enough to step onto -> not a wall (auto-step onto low crates/platforms)
     if (s.walkable && s.top <= feetY + PLAYER.step) continue;
     if (!inFootprint(s, p[0], p[2], PLAYER.radius)) continue;
     // push out along the smaller-penetration local axis

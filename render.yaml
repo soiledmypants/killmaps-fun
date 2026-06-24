@@ -25,6 +25,10 @@ services:
       # Production MUST keep real token verification on. (DEV-only bypass flag.)
       - key: DISABLE_TOKEN_VERIFICATION
         value: "false"
+      # Anti-farm threshold profile: "testing" (relaxed, easy to earn during early
+      # launch) or "launch" (strict). Default testing until you switch to launch.
+      - key: REWARD_MODE
+        value: testing
       # --- set these in the Render dashboard (sync:false keeps them out of git) ---
       # REQUIRED for persistence — a managed Postgres URL (Neon/Supabase/Render PG).
       # Without it, the free instance's filesystem is wiped on every deploy/restart.
