@@ -1,0 +1,114 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap");
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background:
+    radial-gradient(1200px 600px at 70% -10%, rgba(245, 166, 35, 0.06), transparent 60%),
+    #070809;
+  color: #d7dce3;
+  font-family: "Inter", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: 0.01em;
+}
+
+/* No rounded corners anywhere — hard tactical edges (per project direction). */
+
+::selection {
+  background: rgba(245, 166, 35, 0.3);
+}
+
+@layer components {
+  .panel {
+    @apply bg-base-700 border border-base-500 shadow-panel;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold uppercase tracking-wider
+      border border-base-400 bg-base-600 text-steel transition-colors select-none cursor-pointer
+      hover:bg-base-500 hover:text-white;
+  }
+  .btn-accent {
+    @apply border-accent/60 bg-accent/15 text-accent hover:bg-accent/25 hover:text-accent;
+  }
+  .btn-danger {
+    @apply border-kill/60 bg-kill/10 text-kill hover:bg-kill/20;
+  }
+  .btn-ghost {
+    @apply bg-transparent border-transparent hover:bg-base-600;
+  }
+  .input {
+    @apply w-full bg-base-800 border border-base-400 px-3 py-2 text-sm text-white
+      placeholder:text-steel/50 focus:outline-none focus:border-accent/70 font-mono;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1.5 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider border;
+  }
+  .label {
+    @apply text-[11px] font-semibold uppercase tracking-widest text-steel/70;
+  }
+  .stat {
+    @apply font-mono text-white;
+  }
+}
+
+/* Tactical grid backdrop for hero / empty states */
+.grid-backdrop {
+  background-image:
+    linear-gradient(rgba(139, 149, 163, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(139, 149, 163, 0.06) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+/* FPS crosshair */
+.crosshair::before,
+.crosshair::after {
+  content: "";
+  position: absolute;
+  background: rgba(245, 166, 35, 0.9);
+}
+.crosshair::before {
+  width: 2px;
+  height: 14px;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+.crosshair::after {
+  width: 14px;
+  height: 2px;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* hide scrollbars in the editor palettes but keep scroll */
+.scroll-thin::-webkit-scrollbar {
+  width: 8px;
+}
+.scroll-thin::-webkit-scrollbar-thumb {
+  background: #2a313a;
+}
+.scroll-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+canvas {
+  display: block;
+  touch-action: none;
+}

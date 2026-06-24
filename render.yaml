@@ -1,0 +1,48 @@
+# Render config for the KillMaps.fun backend (Node + Express).
+# Backend root is server/. Secrets are set in the Render dashboard, NOT here.
+
+services:
+  - type: web
+    name: killmaps-api
+    runtime: node
+    rootDir: server
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # PORT is provided by Render automatically; the server reads process.env.PORT.
+      - key: SOLANA_CLUSTER
+        value: mainnet-beta
+      - key: SOLSCAN_CLUSTER
+        value: mainnet
+      # Minimum token holding required for a player to be "verified".
+      - key: MIN_TOKENS
+        value: "250000"
+      # --- set these in the Render dashboard (sync:false keeps them out of git) ---
+      # REQUIRED for persistence — a managed Postgres URL (Neon/Supabase/Render PG).
+      # Without it, the free instance's filesystem is wiped on every deploy/restart.
+      - key: DATABASE_URL
+        sync: false
+      # Required for live token verification + payouts (paid mainnet RPC).
+      - key: SOLANA_RPC_URL
+        sync: false
+      # The pump.fun token contract address players must hold to be verified.
+      - key: TOKEN_CA
+        sync: false
+      # Treasury wallet — funds the reward pool / player payouts.
+      - key: TREASURY_WALLET_PRIVATE_KEY
+        sync: false
+      # Creator Rewards wallet — pays creator reward claims (separate wallet).
+      - key: CREATOR_REWARDS_WALLET_PRIVATE_KEY
+        sync: false
+      - key: TREASURY_PUBLIC_KEY
+        sync: false
+      - key: CREATOR_REWARDS_PUBLIC_KEY
+        sync: false
+      # Netlify frontend URL(s), comma-separated, for CORS.
+      - key: FRONTEND_URL
+        sync: false

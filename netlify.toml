@@ -1,0 +1,19 @@
+# Netlify config for the KillMaps.fun frontend (Vite + React).
+# The client lives in client/, so we build from there and publish client/dist.
+
+[build]
+  base = "client"
+  command = "npm install && npm run build"
+  publish = "dist"            # relative to base -> client/dist
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# SPA fallback so client-side routes (/play, /create/:id, /game/:id ...) work.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# NOTE: set VITE_API_URL in Netlify -> Site settings -> Environment variables
+# to your Render backend URL, e.g. https://killmaps-api.onrender.com
