@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { Nav } from "./components/Nav";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { usePlayer } from "./lib/player";
 import Home from "./pages/Home";
 import PlayMaps from "./pages/PlayMaps";
@@ -19,6 +20,7 @@ export default function App() {
   }, [init]);
 
   return (
+    <ErrorBoundary label="app">
     <div className="min-h-full flex flex-col">
       <Routes>
         {/* Full-screen routes render their own chrome. */}
@@ -47,5 +49,6 @@ export default function App() {
         />
       </Routes>
     </div>
+    </ErrorBoundary>
   );
 }

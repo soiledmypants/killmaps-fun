@@ -32,7 +32,7 @@ export interface MapObject {
   color?: string;
   settings?: {
     team?: "A" | "B";
-    weapon?: "rifle" | "pistol" | "shotgun";
+    weapon?: string;
     intensity?: number;
   };
 }

@@ -11,6 +11,8 @@ import { WEAPONS } from "../lib/fps";
 import { sound } from "../lib/sound";
 import { Target, Shield, Play, Wrench } from "../components/icons";
 import { Nav } from "../components/Nav";
+import { ErrorBoundary } from "../components/ErrorBoundary";
+import { ApiError } from "../lib/api";
 
 const PRIMARIES = ["m4", "ak", "mp5"];
 const SECONDARIES = ["glock", "deagle"];
@@ -46,17 +48,59 @@ export default function PreMatch() {
   const { player } = usePlayer();
   const [map, setMap] = useState<GameMap | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!id) return;
-    const load = () => api.getMap(id).then(setMap).catch(() => setErr("Map not found"));
-    load();
-    const t = setInterval(load, 4000); // live player count
-    return () => clearInterval(t);
+    if (!id) {
+      setErr("Invalid map link");
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+    const load = (first: boolean) =>
+      api
+        .getMap(id)
+        .then((m) => {
+          if (cancelled) return;
+          setMap(m);
+          setErr(null);
+        })
+        .catch((e) => {
+          console.error("[prematch] map load failed:", id, e);
+          if (cancelled || !first) return; // keep showing the map on a failed refresh
+          setErr(e instanceof ApiError && e.status === 404 ? "This map no longer exists" : "Map failed to load");
+        })
+        .finally(() => first && !cancelled && setLoading(false));
+    load(true);
+    const t = setInterval(() => load(false), 4000); // live player count refresh
+    return () => {
+      cancelled = true;
+      clearInterval(t);
+    };
   }, [id]);
 
-  if (err) return <><Nav /><div className="mx-auto max-w-3xl px-4 py-16 text-center text-kill">{err} · <Link to="/play" className="text-accent">back to maps</Link></div></>;
-  if (!map) return <><Nav /><div className="mx-auto max-w-3xl px-4 py-16 text-center text-steel">Loading…</div></>;
+  if (err)
+    return (
+      <>
+        <Nav />
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="panel p-8 max-w-sm text-center">
+            <h2 className="text-xl font-bold text-white mb-2">Map failed to load</h2>
+            <p className="text-steel text-sm mb-5">{err}</p>
+            <Link to="/play" className="btn btn-accent mx-auto">Back to Maps</Link>
+          </div>
+        </div>
+      </>
+    );
+  if (loading || !map)
+    return (
+      <>
+        <Nav />
+        <div className="flex items-center justify-center min-h-[60vh] text-steel text-sm">
+          <span className="animate-pulse">Loading map…</span>
+        </div>
+      </>
+    );
 
   const allowed = map.rules?.allowed_weapons || PRIMARIES.concat(SECONDARIES);
   const primaries = PRIMARIES.filter((w) => allowed.includes(w));
@@ -77,7 +121,11 @@ export default function PreMatch() {
 
         <div className="grid lg:grid-cols-[1fr_380px] gap-4">
           <div className="panel h-[460px] overflow-hidden relative">
-            <Preview weapon={loadout.primary} />
+            <ErrorBoundary label="prematch-preview" fallback={() => (
+              <div className="w-full h-full grid-backdrop flex items-center justify-center text-steel text-sm">Operator preview unavailable</div>
+            )}>
+              <Preview weapon={loadout.primary} />
+            </ErrorBoundary>
             <div className="absolute bottom-3 left-3 panel px-3 py-2 bg-base-800/80 backdrop-blur">
               <div className="label">Operator</div>
               <div className="font-bold text-white">{player?.username || "Guest"}</div>

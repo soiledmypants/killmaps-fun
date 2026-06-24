@@ -35,6 +35,8 @@ interface Cbs {
 }
 const TRACERS = 22;
 const SPARKS = 14;
+const WFLASH = 10; // world muzzle flashes for NPCs / remote players
+const isPickup = (k: string) => k.startsWith("pickup");
 
 function RemoteOne({ id }: { id: string }) {
   const g = useRef<THREE.Group>(null);
@@ -46,7 +48,7 @@ function RemoteOne({ id }: { id: string }) {
     const p = net.getRemote().get(id);
     if (!p || !g.current) return;
     g.current.visible = true;
-    g.current.position.set(p.x, p.y, p.z);
+    g.current.position.set(p.x, p.y - (p.crouch ? 0.35 : 0), p.z);
     g.current.rotation.y = p.yaw + Math.PI;
     stateRef.current.moving = p.moving;
     stateRef.current.aiming = p.aiming;
@@ -76,6 +78,8 @@ function Arena({ map, cbs }: { map: GameMap; cbs: Cbs }) {
   const rules = useMemo(() => resolveRules(map), [map]);
   const preset = LIGHT[map.lighting?.preset || "desert"] || LIGHT.desert;
   const lights = useMemo(() => map.objects.filter((o) => o.kind === "light"), [map]);
+  const worldObjects = useMemo(() => map.objects.filter((o) => o.kind !== "light" && !isPickup(o.kind)), [map]);
+  const pickupObjs = useMemo(() => map.objects.filter((o) => isPickup(o.kind)), [map]);
   const npcCount = Math.max(0, Math.min(8, map.rules?.npc_count ?? 3));
 
   const { wallet, username } = usePlayer();
@@ -98,7 +102,13 @@ function Arena({ map, cbs }: { map: GameMap; cbs: Cbs }) {
   const flashUntil = useRef(0);
   const tracerPool = useRef(Array.from({ length: TRACERS }, () => ({ until: 0 })));
   const sparkPool = useRef(Array.from({ length: SPARKS }, () => ({ until: 0 })));
+  const wflashRefs = useRef<(THREE.Mesh | null)[]>([]);
+  const wflashPool = useRef(Array.from({ length: WFLASH }, () => ({ until: 0 })));
   const stepAt = useRef(0);
+  const eyeCur = useRef(PLAYER.eye);
+  const crouchToggle = useRef(false);
+  const pickupRefs = useRef<(THREE.Group | null)[]>([]);
+  const pickupTaken = useRef<number[]>(pickupObjs.map(() => 0));
 
   // resolve the player's two weapons from their loadout, gated by the map's allowed set
   const allowed = rules.allowed_weapons;
@@ -153,14 +163,17 @@ function Arena({ map, cbs }: { map: GameMap; cbs: Cbs }) {
     net.connect(map.map_id, { wallet, username: username || "guest" }, loadout, {
       onShoot: (d) => {
         const wp = WEAPONS[d.weapon] || WEAPONS.m4;
-        sound.shot(wp.category);
-        if (d.origin && d.dir) {
+        if (d.origin) {
           const from = new THREE.Vector3(d.origin[0], d.origin[1], d.origin[2]);
-          const to = from.clone().add(new THREE.Vector3(d.dir[0], d.dir[1], d.dir[2]).multiplyScalar(wp.range));
-          spawnTracer(from, to);
-        }
+          sound.shot(wp.category, spatial(from));
+          spawnWorldFlash(from);
+          if (d.dir) spawnTracer(from, from.clone().add(new THREE.Vector3(d.dir[0], d.dir[1], d.dir[2]).multiplyScalar(wp.range)));
+        } else sound.shot(wp.category, 0.5);
       },
-      onReload: () => sound.reload(),
+      onReload: (d) => {
+        const rp = net.getRemote().get(d.id);
+        sound.reload(rp ? spatial(new THREE.Vector3(rp.x, rp.y + 1.2, rp.z)) : 0.5);
+      },
       onHealth: (d) => {
         if (d.id === net.selfId()) {
           player.current.health = d.hp;
@@ -192,6 +205,7 @@ function Arena({ map, cbs }: { map: GameMap; cbs: Cbs }) {
       if (e.code === "KeyR") reload();
       if (e.code === "Digit1") switchWeapon(0);
       if (e.code === "Digit2") switchWeapon(1);
+      if (e.code === "KeyC") crouchToggle.current = !crouchToggle.current; // toggle crouch
     };
     const up = (e: KeyboardEvent) => (keys.current[e.code] = false);
     const md = (e: MouseEvent) => { if (e.button === 0) { firing.current = true; wantShot.current = true; unlockAudio(); } };
@@ -243,6 +257,16 @@ function Arena({ map, cbs }: { map: GameMap; cbs: Cbs }) {
     const mesh = sparkRefs.current[i]; if (!mesh) return;
     mesh.position.copy(at); mesh.scale.setScalar(1); mesh.visible = true;
     sparkPool.current[i].until = performance.now() + 140; sound.impact();
+  }
+  function spawnWorldFlash(at: THREE.Vector3) {
+    const i = Math.max(0, wflashPool.current.findIndex((t) => t.until < performance.now()));
+    const mesh = wflashRefs.current[i]; if (!mesh) return;
+    mesh.position.copy(at); mesh.visible = true;
+    wflashPool.current[i].until = performance.now() + 60;
+  }
+  // distance-based volume so far-away shots are quieter (cheap spatialisation)
+  function spatial(at: THREE.Vector3): number {
+    return Math.max(0.06, Math.min(1, 1 - camera.position.distanceTo(at) / 42));
   }
 
   function fire(now: number) {
@@ -326,6 +350,27 @@ function Arena({ map, cbs }: { map: GameMap; cbs: Cbs }) {
     useGame.getState().set({ health: Math.max(0, Math.round(p.health)) });
     if (p.health <= 0) { p.alive = false; p.respawnAt = now + 2200; useGame.getState().set({ deaths: useGame.getState().deaths + 1 }); }
   }
+  function takePickup(o: any, i: number, now: number) {
+    const p = player.current;
+    pickupTaken.current[i] = now + 8000; // local cooldown (server is authoritative for others)
+    net.sendPickup(o.id);
+    sound.pickup();
+    const g = useGame.getState();
+    if (o.kind === "pickup_health") {
+      if (p.health >= p.maxHealth) { pickupTaken.current[i] = 0; return; } // don't waste it at full HP
+      p.health = Math.min(p.maxHealth, p.health + 40);
+      g.set({ health: Math.round(p.health), notice: "+40 Health", noticeAt: now });
+    } else if (o.kind === "pickup_ammo") {
+      p.reserve[p.weapon] = Math.round(WEAPONS[p.weapon].reserve * rules.reserve_mult);
+      g.set({ notice: "Ammo refilled", noticeAt: now });
+    } else if (o.kind === "pickup_weapon") {
+      const wid = (o.settings?.weapon as string) || "";
+      const w = WEAPONS[wid] ? wid : "m4";
+      p.weapon = w; p.ammo = WEAPONS[w].mag;
+      if (!p.reserve[w]) p.reserve[w] = Math.round(WEAPONS[w].reserve * rules.reserve_mult);
+      g.set({ weapon: w, ammo: p.ammo, mag: WEAPONS[w].mag, notice: "Picked up " + WEAPONS[w].name, noticeAt: now });
+    }
+  }
 
   useFrame((_s, rawDt) => {
     const dt = Math.min(0.05, rawDt);
@@ -347,7 +392,7 @@ function Arena({ map, cbs }: { map: GameMap; cbs: Cbs }) {
       const wish = new THREE.Vector3();
       if (keys.current["KeyW"]) wish.add(fwd); if (keys.current["KeyS"]) wish.sub(fwd);
       if (keys.current["KeyD"]) wish.add(right); if (keys.current["KeyA"]) wish.sub(right);
-      const crouch = !!keys.current["ControlLeft"] || !!keys.current["KeyC"];
+      const crouch = !!keys.current["ControlLeft"] || crouchToggle.current; // Ctrl hold or C toggle
       const sprint = !!keys.current["ShiftLeft"] && !crouch;
       const speed = crouch ? PLAYER.crouch : sprint ? PLAYER.sprint : PLAYER.walk;
       if (wish.lengthSq() > 0) wish.normalize().multiplyScalar(speed);
@@ -373,16 +418,30 @@ function Arena({ map, cbs }: { map: GameMap; cbs: Cbs }) {
       if (p.onGround && moved > 0.02 && now - stepAt.current > (sprint ? 320 : 440)) { sound.footstep(); stepAt.current = now; }
       if (now - moveSentAt.current > 3000 && moveAccum.current > 0) { cbs.onMove(moveAccum.current); moveAccum.current = 0; moveSentAt.current = now; }
 
-      const eye = crouch ? PLAYER.crouchEye : PLAYER.eye;
-      camera.position.set(p.pos.x, p.pos.y + eye, p.pos.z);
+      // smooth crouch camera transition
+      const eyeTarget = crouch ? PLAYER.crouchEye : PLAYER.eye;
+      eyeCur.current += (eyeTarget - eyeCur.current) * Math.min(1, dt * 12);
+      camera.position.set(p.pos.x, p.pos.y + eyeCur.current, p.pos.z);
 
       const wp = WEAPONS[p.weapon];
       if ((firing.current && wp.auto) || wantShot.current) fire(now);
       wantShot.current = false;
 
+      // pickups
+      for (let i = 0; i < pickupObjs.length; i++) {
+        const o = pickupObjs[i];
+        const ref = pickupRefs.current[i];
+        const remoteTaken = (net.getPickups().get(o.id) || 0) > now;
+        const taken = now < pickupTaken.current[i] || remoteTaken;
+        if (ref) { ref.visible = !taken; if (!taken) ref.rotation.y += dt * 1.5; }
+        if (taken) continue;
+        const dx = p.pos.x - o.position[0], dz = p.pos.z - o.position[2], dy = p.pos.y - o.position[1];
+        if (Math.hypot(dx, dz) < 1.6 && Math.abs(dy) < 2) takePickup(o, i, now);
+      }
+
       // network sync (~12 Hz)
       if (now - netSentAt.current > 80) {
-        net.sendMove({ x: p.pos.x, y: p.pos.y, z: p.pos.z, yaw: camera.rotation.y, pitch: camera.rotation.x, moving: wish.lengthSq() > 0, aiming: firing.current });
+        net.sendMove({ x: p.pos.x, y: p.pos.y, z: p.pos.z, yaw: camera.rotation.y, pitch: camera.rotation.x, moving: wish.lengthSq() > 0, aiming: firing.current, crouch });
         netSentAt.current = now;
       }
     }
@@ -399,6 +458,7 @@ function Arena({ map, cbs }: { map: GameMap; cbs: Cbs }) {
       const m = sparkRefs.current[i];
       if (m && m.visible) { const left = sparkPool.current[i].until - performance.now(); if (left <= 0) m.visible = false; else m.scale.setScalar(Math.max(0.1, left / 140)); }
     }
+    for (let i = 0; i < WFLASH; i++) { const m = wflashRefs.current[i]; if (m && m.visible && now >= wflashPool.current[i].until) m.visible = false; }
 
     // bots (local test targets)
     bots.current.forEach((b, i) => {
@@ -424,10 +484,17 @@ function Arena({ map, cbs }: { map: GameMap; cbs: Cbs }) {
       if (g) { g.position.copy(b.pos); g.rotation.y = b.yaw; }
       if (engaged && now >= b.nextShot) {
         b.nextShot = now + 700 + Math.random() * 900;
-        const ro: Vec3 = [b.pos.x, b.pos.y + 1.2, b.pos.z];
-        const rd = new THREE.Vector3(p.pos.x - b.pos.x, 0, p.pos.z - b.pos.z).normalize(); const rda: Vec3 = [rd.x, rd.y, rd.z];
+        const muzzle = new THREE.Vector3(b.pos.x, b.pos.y + 1.4, b.pos.z);
+        const rd = new THREE.Vector3(p.pos.x - b.pos.x, (p.pos.y + 1.2) - (b.pos.y + 1.4), p.pos.z - b.pos.z).normalize();
+        const ro: Vec3 = [muzzle.x, muzzle.y, muzzle.z]; const rda: Vec3 = [rd.x, rd.y, rd.z];
         let blocked = false; for (const sol of solids) { const t = rayAABB(ro, rda, sol); if (t != null && t < distP - 0.5) { blocked = true; break; } }
-        if (!blocked && Math.random() < 0.5) damagePlayer(7 + Math.random() * 6, now);
+        if (!blocked) {
+          const wp = WEAPONS[b.weapon];
+          sound.shot(wp.category, spatial(muzzle)); // audible (quieter with distance)
+          spawnWorldFlash(muzzle); // visible muzzle flash
+          spawnTracer(muzzle, muzzle.clone().add(rd.clone().multiplyScalar(Math.min(distP, wp.range)))); // visible tracer
+          if (Math.random() < 0.5) damagePlayer(7 + Math.random() * 6, now);
+        }
       }
     });
   });
@@ -444,7 +511,14 @@ function Arena({ map, cbs }: { map: GameMap; cbs: Cbs }) {
         <pointLight key={o.id} position={[o.position[0], o.position[1] + 0.5, o.position[2]]} intensity={(o.settings?.intensity || 1) * 8} distance={18} color={o.color || "#ffd98a"} />
       ))}
 
-      {map.objects.map((o) => <AssetMesh key={o.id} object={o} />)}
+      {worldObjects.map((o) => <AssetMesh key={o.id} object={o} />)}
+
+      {/* pickups (functional: walk over to collect; hide when taken, respawn after cooldown) */}
+      {pickupObjs.map((o, i) => (
+        <group key={o.id} ref={(el) => (pickupRefs.current[i] = el)}>
+          <AssetMesh object={o} />
+        </group>
+      ))}
 
       {bots.current.map((b, i) => (
         <group key={b.id} ref={(el) => (botGroups.current[i] = el)}>
@@ -470,6 +544,12 @@ function Arena({ map, cbs }: { map: GameMap; cbs: Cbs }) {
       {Array.from({ length: SPARKS }).map((_, i) => (
         <mesh key={"s" + i} ref={(el) => (sparkRefs.current[i] = el)} visible={false}>
           <icosahedronGeometry args={[0.12, 0]} /><meshBasicMaterial color="#ffd08a" />
+        </mesh>
+      ))}
+      {/* world muzzle flashes for NPCs / remote players */}
+      {Array.from({ length: WFLASH }).map((_, i) => (
+        <mesh key={"wf" + i} ref={(el) => (wflashRefs.current[i] = el)} visible={false}>
+          <icosahedronGeometry args={[0.17, 0]} /><meshBasicMaterial color="#ffd27a" transparent opacity={0.95} />
         </mesh>
       ))}
 

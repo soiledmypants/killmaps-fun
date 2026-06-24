@@ -27,6 +27,8 @@ interface GameState {
   feed: FeedItem[];
   hitMarker: number; // timestamp of last hit (for crosshair flash)
   headMarker: number; // timestamp of last headshot
+  notice: string | null; // transient pickup / event notification
+  noticeAt: number;
   lastKillInfo: string | null; // anti-farm reason / counted status from server
   bots: { id: string; name: string; kills: number; deaths: number }[];
 
@@ -50,6 +52,8 @@ export const useGame = create<GameState>((set) => ({
   feed: [],
   hitMarker: 0,
   headMarker: 0,
+  notice: null,
+  noticeAt: 0,
   lastKillInfo: null,
   bots: [],
 

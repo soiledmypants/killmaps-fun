@@ -9,6 +9,7 @@ import { recordValidatedKill } from "./rewards.js";
 import { uid } from "./antifarm.js";
 
 const MAX_PLAYERS = Number(process.env.MAX_PLAYERS || 16);
+const PICKUP_RESPAWN_MS = Number(process.env.PICKUP_RESPAWN_MS || 8000);
 
 // server-side weapon damage (mirror of client WEAPONS; head = instant kill)
 const DMG = { m4: 26, ak: 30, mp5: 20, ump: 24, glock: 26, deagle: 58, pump: 90, awp: 120 };
@@ -31,8 +32,15 @@ function spawnsOf(map) {
 
 const publicPlayer = (p) => ({
   id: p.id, wallet: p.wallet, username: p.username, loadout: p.loadout,
-  x: p.x, y: p.y, z: p.z, yaw: p.yaw, pitch: p.pitch, hp: p.hp, alive: p.alive, moving: p.moving, aiming: p.aiming,
+  x: p.x, y: p.y, z: p.z, yaw: p.yaw, pitch: p.pitch, hp: p.hp, alive: p.alive, moving: p.moving, aiming: p.aiming, crouch: !!p.crouch,
 });
+
+const activePickups = (room) => {
+  const now = Date.now();
+  const out = {};
+  for (const [k, until] of room.pickups) if (until > now) out[k] = until;
+  return out;
+};
 
 export function initRealtime(httpServer, allowedOrigins) {
   const io = new Server(httpServer, {
@@ -47,7 +55,7 @@ export function initRealtime(httpServer, allowedOrigins) {
         match_id: matchId, map_id: mapId, creator: map.creator, mode: "pvp",
         started_at: Date.now(), ended_at: null, players: [], movement: {}, events: 0, kills: 0, valid: true,
       };
-      room = { matchId, players: new Map() };
+      room = { matchId, players: new Map(), pickups: new Map() };
       rooms.set(mapId, room);
     }
     return room;
@@ -85,7 +93,7 @@ export function initRealtime(httpServer, allowedOrigins) {
       socket.emit("snapshot", {
         map_id: data.map_id, self: { id: socket.id, spawn },
         players: [...room.players.values()].filter((p) => p.id !== socket.id).map(publicPlayer),
-        max: MAX_PLAYERS,
+        max: MAX_PLAYERS, pickups: activePickups(room),
       });
       socket.to(data.map_id).emit("player_join", publicPlayer(player));
       io.to(data.map_id).emit("counts", { map_id: data.map_id, active: room.players.size, max: MAX_PLAYERS });
@@ -95,7 +103,7 @@ export function initRealtime(httpServer, allowedOrigins) {
       const room = rooms.get(socket.data?.mapId);
       const p = room?.players.get(socket.id);
       if (!p) return;
-      Object.assign(p, { x: m.x, y: m.y, z: m.z, yaw: m.yaw, pitch: m.pitch, moving: !!m.moving, aiming: !!m.aiming });
+      Object.assign(p, { x: m.x, y: m.y, z: m.z, yaw: m.yaw, pitch: m.pitch, moving: !!m.moving, aiming: !!m.aiming, crouch: !!m.crouch });
       // accumulate movement for anti-farm
       const db = read();
       const match = db.matches[room.matchId];
@@ -104,7 +112,20 @@ export function initRealtime(httpServer, allowedOrigins) {
         if (d > 0) match.movement[p.wallet] = (match.movement[p.wallet] || 0) + d;
         p.lastX = m.x; p.lastZ = m.z;
       }
-      socket.to(socket.data.mapId).emit("player_move", { id: socket.id, x: m.x, y: m.y, z: m.z, yaw: m.yaw, pitch: m.pitch, moving: !!m.moving, aiming: !!m.aiming });
+      socket.to(socket.data.mapId).emit("player_move", { id: socket.id, x: m.x, y: m.y, z: m.z, yaw: m.yaw, pitch: m.pitch, moving: !!m.moving, aiming: !!m.aiming, crouch: !!m.crouch });
+    });
+
+    // Pickups are server-authoritative: first taker wins, others see it disappear,
+    // and it respawns after PICKUP_RESPAWN_MS.
+    socket.on("pickup", (d = {}) => {
+      const room = rooms.get(socket.data?.mapId);
+      if (!room || !d.objId) return;
+      const now = Date.now();
+      const taken = room.pickups.get(d.objId) || 0;
+      if (taken > now) return; // already taken by someone else
+      const until = now + PICKUP_RESPAWN_MS;
+      room.pickups.set(d.objId, until);
+      io.to(socket.data.mapId).emit("pickup_taken", { objId: d.objId, until });
     });
 
     socket.on("shoot", (s = {}) => {

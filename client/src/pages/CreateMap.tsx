@@ -281,15 +281,12 @@ function Inspector({ object, onChange, onDelete, onDuplicate, onClose }: {
 
       {object.kind === "pickup_weapon" && (
         <div>
-          <div className="label mb-1">Weapon</div>
-          <div className="flex gap-1">
-            {(["rifle", "pistol", "shotgun"] as const).map((wp) => (
-              <button key={wp} onClick={() => onChange({ settings: { ...object.settings, weapon: wp } })}
-                className={`flex-1 py-1.5 text-[11px] font-semibold uppercase border ${object.settings?.weapon === wp ? "border-accent bg-accent/15 text-accent" : "border-base-500 text-steel"}`}>
-                {wp}
-              </button>
+          <div className="label mb-1">Grants weapon</div>
+          <select className="input text-xs" value={object.settings?.weapon || "m4"} onChange={(e) => onChange({ settings: { ...object.settings, weapon: e.target.value } })}>
+            {ALL_WEAPONS.map((id) => (
+              <option key={id} value={id}>{WEAPONS[id].name}</option>
             ))}
-          </div>
+          </select>
         </div>
       )}
 

@@ -8,6 +8,7 @@ import { WEAPONS, resolveRules } from "../lib/fps";
 import { FPSScene } from "../three/FPSScene";
 import { sound, unlockAudio } from "../lib/sound";
 import { useNet } from "../lib/net";
+import { ErrorBoundary } from "../components/ErrorBoundary";
 import { Target, X } from "../components/icons";
 import { VerifyBadge } from "../components/IdentityModal";
 
@@ -119,7 +120,20 @@ export default function Game() {
 
   return (
     <div className="h-screen w-screen relative bg-base-900 overflow-hidden select-none">
-      <FPSScene map={map} test={test} cbs={cbs} />
+      <ErrorBoundary
+        label="game-scene"
+        fallback={() => (
+          <div className="absolute inset-0 flex items-center justify-center bg-base-900">
+            <div className="panel p-8 text-center max-w-sm">
+              <h2 className="text-xl font-bold text-white mb-2">Map failed to load</h2>
+              <p className="text-steel text-sm mb-5">The arena could not be rendered.</p>
+              <Link to="/play" className="btn btn-accent mx-auto">Back to Maps</Link>
+            </div>
+          </div>
+        )}
+      >
+        <FPSScene map={map} test={test} cbs={cbs} />
+      </ErrorBoundary>
 
       {/* Crosshair */}
       {game.status === "playing" && <div className="crosshair absolute inset-0 pointer-events-none" />}
@@ -135,6 +149,12 @@ export default function Game() {
 
       {/* HUD */}
       <div className="absolute inset-0 pointer-events-none">
+        {/* pickup / event notice */}
+        {game.status === "playing" && game.notice && performance.now() - game.noticeAt < 2000 && (
+          <div className="absolute left-1/2 bottom-[28%] -translate-x-1/2 panel px-4 py-1.5 bg-base-800/85 text-accent font-semibold text-sm animate-pulse">
+            {game.notice}
+          </div>
+        )}
         {/* top bar */}
         <div className="absolute top-0 inset-x-0 flex items-center justify-between p-3">
           <div className="panel px-3 py-1.5 flex items-center gap-3">

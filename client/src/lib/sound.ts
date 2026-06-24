@@ -82,9 +82,10 @@ function tone(freq: number, dur: number, gain: number, type: OscillatorType, t0:
 }
 
 export const sound = {
-  shot(category: WeaponCategory = "assault") {
+  // vol (0..1) makes other players' / NPC shots quieter with distance (cheap spatial)
+  shot(category: WeaponCategory = "assault", vol = 1) {
     const c = ac();
-    if (!c || muted) return;
+    if (!c || muted || vol <= 0.02) return;
     const t = c.currentTime;
     const cfg: Record<WeaponCategory, { g: number; f: number; d: number; crack: number }> = {
       assault: { g: 0.5, f: 1400, d: 0.14, crack: 220 },
@@ -94,17 +95,24 @@ export const sound = {
       sniper: { g: 0.85, f: 900, d: 0.4, crack: 90 },
     };
     const w = cfg[category];
-    noiseBurst(w.d, w.g, w.f, "lowpass", t);
-    noiseBurst(w.d * 0.5, w.g * 0.6, w.f * 2.5, "highpass", t);
-    tone(w.crack, w.d * 0.9, w.g * 0.5, "sawtooth", t, w.crack * 0.4);
+    noiseBurst(w.d, w.g * vol, w.f, "lowpass", t);
+    noiseBurst(w.d * 0.5, w.g * 0.6 * vol, w.f * 2.5, "highpass", t);
+    tone(w.crack, w.d * 0.9, w.g * 0.5 * vol, "sawtooth", t, w.crack * 0.4);
   },
-  reload() {
+  reload(vol = 1) {
+    const c = ac();
+    if (!c || muted || vol <= 0.02) return;
+    const t = c.currentTime;
+    noiseBurst(0.04, 0.25 * vol, 2600, "highpass", t);
+    noiseBurst(0.05, 0.3 * vol, 1800, "bandpass", t + 0.25);
+    noiseBurst(0.06, 0.35 * vol, 1200, "lowpass", t + 0.6);
+  },
+  pickup() {
     const c = ac();
     if (!c || muted) return;
     const t = c.currentTime;
-    noiseBurst(0.04, 0.25, 2600, "highpass", t);
-    noiseBurst(0.05, 0.3, 1800, "bandpass", t + 0.25);
-    noiseBurst(0.06, 0.35, 1200, "lowpass", t + 0.6);
+    tone(740, 0.07, 0.22, "triangle", t, 980);
+    tone(1180, 0.09, 0.2, "triangle", t + 0.07);
   },
   empty() {
     const c = ac();

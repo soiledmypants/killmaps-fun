@@ -15,12 +15,17 @@ export interface RemotePlayer {
   username: string;
   loadout: Loadout;
   x: number; y: number; z: number; yaw: number; pitch: number;
-  hp: number; alive: boolean; moving: boolean; aiming: boolean;
+  hp: number; alive: boolean; moving: boolean; aiming: boolean; crouch: boolean;
 }
 
 const remote = new Map<string, RemotePlayer>();
+// objId -> timestamp(ms) until which the pickup is taken (server-authoritative)
+const pickups = new Map<string, number>();
 export function getRemote() {
   return remote;
+}
+export function getPickups() {
+  return pickups;
 }
 
 export interface NetHandlers {
@@ -59,12 +64,15 @@ export function connect(mapId: string, identity: { wallet: string; username: str
   socket.on("disconnect", () => useNet.setState({ connected: false }));
   socket.on("join_error", (e) => console.warn("[net] join error:", e?.error));
 
-  socket.on("snapshot", (d: { players: RemotePlayer[]; max: number }) => {
+  socket.on("snapshot", (d: { players: RemotePlayer[]; max: number; pickups?: Record<string, number> }) => {
     remote.clear();
     for (const p of d.players) remote.set(p.id, p);
+    pickups.clear();
+    if (d.pickups) for (const [k, v] of Object.entries(d.pickups)) pickups.set(k, v);
     useNet.setState({ maxPlayers: d.max || 16 });
     syncRoster();
   });
+  socket.on("pickup_taken", (d: { objId: string; until: number }) => pickups.set(d.objId, d.until));
   socket.on("player_join", (p: RemotePlayer) => { remote.set(p.id, p); syncRoster(); });
   socket.on("player_leave", ({ id }: { id: string }) => { remote.delete(id); syncRoster(); });
   socket.on("player_move", (m: any) => { const p = remote.get(m.id); if (p) Object.assign(p, m); });
@@ -84,6 +92,7 @@ export const sendShoot = (s: any) => socket?.emit("shoot", s);
 export const sendReload = (s: any) => socket?.emit("reload", s);
 export const sendHit = (h: any) => socket?.emit("hit", h);
 export const sendRespawn = (r: any) => socket?.emit("respawn", r);
+export const sendPickup = (objId: string) => socket?.emit("pickup", { objId });
 export const selfId = () => socket?.id || null;
 export function disconnect() {
   socket?.disconnect();
