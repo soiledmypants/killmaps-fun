@@ -27,7 +27,10 @@ const SOLSCAN_CLUSTER = process.env.SOLSCAN_CLUSTER || (SOLANA_CLUSTER === "main
 // ---- CORS ----
 const DEV_ORIGINS = [];
 for (const host of ["localhost", "127.0.0.1"]) {
-  for (const port of [5173, 5174, 5175, 4173]) DEV_ORIGINS.push(`http://${host}:${port}`);
+  // Vite auto-bumps when ports are busy; allow a generous local range + preview.
+  for (const port of [5173, 5174, 5175, 5176, 5177, 5178, 5179, 5180, 4173]) {
+    DEV_ORIGINS.push(`http://${host}:${port}`);
+  }
 }
 const normOrigin = (o) => (o || "").trim().replace(/\/+$/, "");
 function envOrigins() {
@@ -124,6 +127,7 @@ function publicConfig() {
     tokenCA: solanaConfig.tokenCA,
     minTokens: MIN_TOKENS,
     verifyLive: solanaConfig.verifyLive,
+    devVerifyOff: solanaConfig.disableTokenVerification,
     onchain: solanaConfig.treasuryLive,
     rpcConfigured: solanaConfig.rpcConfigured,
     treasuryWallet: solanaConfig.treasuryPublicKey,
@@ -176,6 +180,7 @@ async function verifyPlayer(db, player, { force = false } = {}) {
     player.verified = !!result.verified;
     player.token_balance = result.balance || 0;
     player.verify_mock = !!result.mock;
+    player.dev_bypass = !!result.devBypass;
     player.verified_at = now;
   }
   return result;

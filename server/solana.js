@@ -26,6 +26,13 @@ const RPC_URL = process.env.SOLANA_RPC_URL || "";
 const TOKEN_CA = (process.env.TOKEN_CA || "").trim();
 const MIN_TOKENS = Number(process.env.MIN_TOKENS || 250000);
 
+// DEV-ONLY bypass. When DISABLE_TOKEN_VERIFICATION=true the real verification code
+// below is skipped: every wallet is treated as a verified holder so the full app can
+// be tested without holding tokens. Set to false (or unset) in production to restore
+// the real 250,000-token on-chain SPL balance check. NEVER enable in production.
+const DISABLE_TOKEN_VERIFICATION =
+  String(process.env.DISABLE_TOKEN_VERIFICATION || "").toLowerCase() === "true";
+
 /** Load a Keypair from a base58 string (Phantom export) or a JSON array. Never logs the secret. */
 function loadKeypair(secret, label) {
   if (!secret || !secret.trim()) return null;
@@ -105,6 +112,11 @@ export function isValidPublicKey(addr) {
  */
 export async function getTokenBalance(wallet) {
   if (!isValidPublicKey(wallet)) return { ok: false, error: "invalid wallet address" };
+  // DEV bypass: everyone verified, no RPC, no minimum holding. The real check below
+  // is preserved and runs again the moment this flag is off.
+  if (DISABLE_TOKEN_VERIFICATION) {
+    return { ok: true, verified: true, balance: MIN_TOKENS, devBypass: true };
+  }
   if (!connection || !TOKEN_CA) {
     // Cannot verify without an RPC + mint — treat as unverified but allow casual play.
     return { ok: true, mock: true, verified: false, balance: 0 };
@@ -140,11 +152,16 @@ export const solanaConfig = {
   tokenCA: TOKEN_CA || null,
   minTokens: MIN_TOKENS,
   verifyLive: !!(connection && TOKEN_CA),
+  disableTokenVerification: DISABLE_TOKEN_VERIFICATION,
 };
 
 export function logStartup() {
   const payMode = TREASURY_LIVE ? "LIVE (on-chain)" : "MOCK (no transfers)";
-  const verMode = solanaConfig.verifyLive ? "LIVE (on-chain SPL balance)" : "MOCK (all unverified)";
+  const verMode = DISABLE_TOKEN_VERIFICATION
+    ? "DEV BYPASS (everyone verified — DISABLE_TOKEN_VERIFICATION=true)"
+    : solanaConfig.verifyLive
+    ? "LIVE (on-chain SPL balance)"
+    : "MOCK (all unverified)";
   console.log(`[solana] payout mode: ${payMode}`);
   console.log(`[solana] verify mode: ${verMode}`);
   if (connection) console.log(`[solana] rpc: ${RPC_URL}`);

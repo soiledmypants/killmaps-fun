@@ -76,6 +76,7 @@ export interface Player {
   token_balance: number;
   verified_at: number;
   verify_mock?: boolean;
+  dev_bypass?: boolean;
   stats: { kills: number; deaths: number; maps_created: number };
   created_at: number;
   updated_at?: number;
@@ -130,6 +131,7 @@ export interface PublicConfig {
   tokenCA: string | null;
   minTokens: number;
   verifyLive: boolean;
+  devVerifyOff: boolean;
   onchain: boolean;
   rpcConfigured: boolean;
   treasuryWallet: string | null;

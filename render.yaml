@@ -22,6 +22,9 @@ services:
       # Minimum token holding required for a player to be "verified".
       - key: MIN_TOKENS
         value: "250000"
+      # Production MUST keep real token verification on. (DEV-only bypass flag.)
+      - key: DISABLE_TOKEN_VERIFICATION
+        value: "false"
       # --- set these in the Render dashboard (sync:false keeps them out of git) ---
       # REQUIRED for persistence — a managed Postgres URL (Neon/Supabase/Render PG).
       # Without it, the free instance's filesystem is wiped on every deploy/restart.

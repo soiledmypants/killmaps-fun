@@ -145,3 +145,10 @@ export const X = ({ size = 18, className }: P) => (
     <line x1="18" y1="6" x2="6" y2="18" />
   </svg>
 );
+
+export const Lock = ({ size = 18, className }: P) => (
+  <svg {...base(size, className)}>
+    <rect x="5" y="11" width="14" height="9" rx="1" />
+    <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+  </svg>
+);

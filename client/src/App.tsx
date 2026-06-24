@@ -6,6 +6,7 @@ import Home from "./pages/Home";
 import PlayMaps from "./pages/PlayMaps";
 import CreateMap from "./pages/CreateMap";
 import Game from "./pages/Game";
+import Loadout from "./pages/Loadout";
 import Dashboard from "./pages/Dashboard";
 import Transactions from "./pages/Transactions";
 import Profile from "./pages/Profile";
@@ -19,7 +20,8 @@ export default function App() {
   return (
     <div className="min-h-full flex flex-col">
       <Routes>
-        {/* Builder + game are full-screen and render their own chrome. */}
+        {/* Full-screen routes render their own chrome. */}
+        <Route path="/" element={<Home />} />
         <Route path="/create" element={<CreateMap />} />
         <Route path="/edit/:id" element={<CreateMap />} />
         <Route path="/game/:id" element={<Game />} />
@@ -30,8 +32,8 @@ export default function App() {
               <Nav />
               <div className="flex-1">
                 <Routes>
-                  <Route path="/" element={<Home />} />
                   <Route path="/play" element={<PlayMaps />} />
+                  <Route path="/loadout" element={<Loadout />} />
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/transactions" element={<Transactions />} />
                   <Route path="/profile" element={<Profile />} />
