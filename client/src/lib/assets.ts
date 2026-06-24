@@ -16,12 +16,12 @@ export interface AssetDef {
   hint?: string;
 }
 
-// Tactical low-poly palette: concrete, steel, hazard amber, team blue/red.
-const CONCRETE = "#5b626b";
-const CONCRETE_DARK = "#3d434b";
-const STEEL = "#6f7782";
-const CRATE = "#7a5a32";
-const HAZARD = "#c9962f";
+// Desert tactical palette: adobe/sandstone, warm steel, crates, hazard amber.
+const CONCRETE = "#b6a079"; // sandstone / adobe
+const CONCRETE_DARK = "#8d7853";
+const STEEL = "#8a8170"; // weathered warm steel
+const CRATE = "#9c7444";
+const HAZARD = "#caa33a";
 
 export const ASSETS: AssetDef[] = [
   // ---- structure ----

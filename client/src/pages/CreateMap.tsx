@@ -9,14 +9,15 @@ import { EditorScene } from "../three/EditorScene";
 import { IdentityModal } from "../components/IdentityModal";
 import { Move, Rotate, Scale, Copy, Trash, Undo, Redo, Save, Play, Globe, Target, X } from "../components/icons";
 import type { MapObject, Vec3 } from "../lib/types";
+import { resolveRules, ALL_WEAPONS, WEAPONS } from "../lib/fps";
 
 export default function CreateMap() {
   const { id } = useParams();
   const nav = useNavigate();
   const { wallet, username, player } = usePlayer();
   const {
-    map, selectedId, placing, transformMode, snap, snapSize, dirty, past, future,
-    loadMap, setPlacing, select, setTransformMode, toggleSnap, setSnapSize,
+    map, selectedId, placing, transformMode, snap, snapSize, rotSnap, scaleSnap, dirty, past, future,
+    loadMap, setPlacing, select, setTransformMode, toggleSnap, setSnapSize, toggleRotSnap, toggleScaleSnap,
     deleteObject, duplicateSelected, updateObject, setMeta, undo, redo, markClean,
   } = useEditor();
 
@@ -140,8 +141,14 @@ export default function CreateMap() {
           <div className="w-px h-5 bg-base-500 mx-1" />
           <ToolBtn onClick={undo} disabled={!past.length} title="Undo"><Undo size={16} /></ToolBtn>
           <ToolBtn onClick={redo} disabled={!future.length} title="Redo"><Redo size={16} /></ToolBtn>
-          <button onClick={toggleSnap} className={`ml-1 px-2 py-1 text-[11px] font-semibold uppercase border ${snap ? "border-accent/50 text-accent bg-accent/10" : "border-base-500 text-steel"}`}>
-            Snap {snap ? snapSize : "off"}
+          <button onClick={toggleSnap} title="Grid snap" className={`ml-1 px-2 py-1 text-[11px] font-semibold uppercase border ${snap ? "border-accent/50 text-accent bg-accent/10" : "border-base-500 text-steel"}`}>
+            Grid {snap ? snapSize : "off"}
+          </button>
+          <button onClick={toggleRotSnap} title="Rotation snap (15°)" className={`px-2 py-1 text-[11px] font-semibold uppercase border ${rotSnap ? "border-accent/50 text-accent bg-accent/10" : "border-base-500 text-steel"}`}>
+            Rot
+          </button>
+          <button onClick={toggleScaleSnap} title="Scale snap (0.25)" className={`px-2 py-1 text-[11px] font-semibold uppercase border ${scaleSnap ? "border-accent/50 text-accent bg-accent/10" : "border-base-500 text-steel"}`}>
+            Scl
           </button>
         </div>
 
@@ -316,7 +323,7 @@ function MapSettings({ map, onMeta }: { map: any; onMeta: (p: any) => void }) {
       <div>
         <div className="label mb-1">Lighting</div>
         <div className="grid grid-cols-2 gap-1">
-          {["warehouse", "indoor", "dusk", "night"].map((p) => (
+          {["desert", "dusk", "night", "indoor"].map((p) => (
             <button key={p} onClick={() => onMeta({ lighting: { ...map.lighting, preset: p } })}
               className={`py-1.5 text-[11px] font-semibold uppercase border ${map.lighting?.preset === p ? "border-accent bg-accent/15 text-accent" : "border-base-500 text-steel"}`}>
               {p}
@@ -324,9 +331,55 @@ function MapSettings({ map, onMeta }: { map: any; onMeta: (p: any) => void }) {
           ))}
         </div>
       </div>
+
+      <MatchRules map={map} onMeta={onMeta} />
+
       <div className="pt-3 border-t border-base-500 text-[11px] text-steel leading-relaxed space-y-1">
-        <p>Select an object to edit its transform.</p>
-        <p className="text-steel/70">Shortcuts: G move · R rotate · T scale · Ctrl+Z undo · Del delete · Ctrl+S save</p>
+        <p className="text-white font-semibold">Editor controls</p>
+        <p>WASD move · Right-drag look · Middle pan · Wheel zoom · Q/E down/up · Shift faster · F focus</p>
+        <p>Click a piece then click the ground to place · G move · R rotate · T scale · Del delete · Ctrl+Z/Y undo</p>
+      </div>
+    </div>
+  );
+}
+
+function MatchRules({ map, onMeta }: { map: any; onMeta: (p: any) => void }) {
+  const r = resolveRules(map);
+  const setRules = (patch: any) => onMeta({ rules: { ...r, ...patch } });
+  const toggleWeapon = (id: string) => {
+    const has = r.allowed_weapons.includes(id);
+    let allowed = has ? r.allowed_weapons.filter((w: string) => w !== id) : [...r.allowed_weapons, id];
+    if (allowed.length === 0) allowed = [id];
+    const starting = allowed.includes(r.starting_weapon) ? r.starting_weapon : allowed[0];
+    setRules({ allowed_weapons: allowed, starting_weapon: starting });
+  };
+  return (
+    <div className="pt-3 border-t border-base-500">
+      <div className="label mb-2">Match Rules</div>
+      <div className="label text-[9px] mb-1">Allowed weapons</div>
+      <div className="grid grid-cols-2 gap-1 mb-3">
+        {ALL_WEAPONS.map((id) => (
+          <button key={id} onClick={() => toggleWeapon(id)}
+            className={`py-1 text-[10px] font-semibold uppercase border ${r.allowed_weapons.includes(id) ? "border-accent/60 bg-accent/15 text-accent" : "border-base-500 text-steel"}`}>
+            {WEAPONS[id].name}
+          </button>
+        ))}
+      </div>
+      <div className="label text-[9px] mb-1">Starting weapon</div>
+      <select className="input mb-3 text-xs" value={r.starting_weapon} onChange={(e) => setRules({ starting_weapon: e.target.value })}>
+        {r.allowed_weapons.map((id: string) => (
+          <option key={id} value={id}>{WEAPONS[id].name}</option>
+        ))}
+      </select>
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <div className="label text-[9px] mb-1">Health</div>
+          <input type="number" className="input py-1 text-xs" value={r.health} min={1} onChange={(e) => setRules({ health: parseInt(e.target.value) || 100 })} />
+        </div>
+        <div>
+          <div className="label text-[9px] mb-1">Armor</div>
+          <input type="number" className="input py-1 text-xs" value={r.armor} min={0} onChange={(e) => setRules({ armor: parseInt(e.target.value) || 0 })} />
+        </div>
       </div>
     </div>
   );

@@ -174,13 +174,65 @@ export function raySphere(ro: Vec3, rd: Vec3, center: Vec3, radius: number): num
   return t >= 0 ? t : null;
 }
 
-export const WEAPONS = {
-  rifle: { name: "Rifle", damage: 26, fireRate: 9, mag: 30, reload: 1.8, spread: 0.012, auto: true, range: 120 },
-  pistol: { name: "Pistol", damage: 34, fireRate: 4, mag: 12, reload: 1.3, spread: 0.02, auto: false, range: 80 },
-  shotgun: { name: "Shotgun", damage: 14, fireRate: 1.3, mag: 6, reload: 2.4, spread: 0.09, auto: false, range: 40, pellets: 8 },
-} as const;
+export type WeaponCategory = "assault" | "smg" | "pistol" | "shotgun" | "sniper";
 
-export type WeaponId = keyof typeof WEAPONS;
+export interface WeaponDef {
+  name: string;
+  category: WeaponCategory;
+  damage: number;
+  fireRate: number; // shots / sec
+  mag: number;
+  reserve: number; // spare rounds
+  reload: number; // seconds
+  spread: number;
+  auto: boolean;
+  range: number;
+  headshotMult: number;
+  pellets?: number;
+  scoped?: boolean;
+}
+
+// Original weapons inspired by tactical-shooter archetypes — no copyrighted models.
+export const WEAPONS: Record<string, WeaponDef> = {
+  ak: { name: "VK-47", category: "assault", damage: 30, fireRate: 9, mag: 30, reserve: 90, reload: 2.2, spread: 0.016, auto: true, range: 130, headshotMult: 2.6 },
+  m4: { name: "MK-4", category: "assault", damage: 26, fireRate: 10.5, mag: 30, reserve: 90, reload: 2.0, spread: 0.012, auto: true, range: 130, headshotMult: 2.5 },
+  mp5: { name: "SP-5", category: "smg", damage: 20, fireRate: 13, mag: 30, reserve: 120, reload: 1.8, spread: 0.018, auto: true, range: 80, headshotMult: 2.2 },
+  ump: { name: "UM-9", category: "smg", damage: 24, fireRate: 10, mag: 25, reserve: 100, reload: 1.9, spread: 0.02, auto: true, range: 85, headshotMult: 2.2 },
+  glock: { name: "G-18", category: "pistol", damage: 26, fireRate: 6, mag: 17, reserve: 68, reload: 1.4, spread: 0.022, auto: false, range: 70, headshotMult: 2.4 },
+  deagle: { name: "Hand Cannon", category: "pistol", damage: 58, fireRate: 2.6, mag: 7, reserve: 35, reload: 1.7, spread: 0.018, auto: false, range: 90, headshotMult: 2.8 },
+  pump: { name: "Breacher", category: "shotgun", damage: 15, fireRate: 1.2, mag: 7, reserve: 28, reload: 2.6, spread: 0.085, auto: false, range: 38, headshotMult: 1.6, pellets: 9 },
+  awp: { name: "Longshot", category: "sniper", damage: 120, fireRate: 0.8, mag: 5, reserve: 20, reload: 3.0, spread: 0.002, auto: false, range: 300, headshotMult: 1.5, scoped: true },
+};
+
+export type WeaponId = string;
+export const ALL_WEAPONS: WeaponId[] = Object.keys(WEAPONS);
+export const DEFAULT_ALLOWED: WeaponId[] = ["m4", "ak", "mp5", "glock", "pump", "awp"];
+
+export interface MatchRules {
+  allowed_weapons: WeaponId[];
+  starting_weapon: WeaponId;
+  health: number;
+  armor: number;
+  reserve_mult: number;
+}
+
+export function defaultRules(): MatchRules {
+  return { allowed_weapons: [...DEFAULT_ALLOWED], starting_weapon: "m4", health: 100, armor: 0, reserve_mult: 1 };
+}
+
+export function resolveRules(map: { rules?: Partial<MatchRules> }): MatchRules {
+  const d = defaultRules();
+  const r = map.rules || {};
+  const allowed = (r.allowed_weapons && r.allowed_weapons.filter((w) => WEAPONS[w]).length ? r.allowed_weapons.filter((w) => WEAPONS[w]) : d.allowed_weapons);
+  const start = r.starting_weapon && allowed.includes(r.starting_weapon) ? r.starting_weapon : allowed[0];
+  return {
+    allowed_weapons: allowed,
+    starting_weapon: start,
+    health: r.health && r.health > 0 ? r.health : d.health,
+    armor: r.armor != null ? r.armor : d.armor,
+    reserve_mult: r.reserve_mult || 1,
+  };
+}
 
 export function spawnsOf(map: GameMap): Vec3[] {
   const s = map.objects

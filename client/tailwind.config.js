@@ -4,23 +4,25 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Tactical dark military palette — concrete, steel, hazard amber, kill red.
+        // Desert tactical palette — warm dark sand/earth, hazard amber, kill red.
         base: {
-          900: "#070809",
-          800: "#0a0c0f",
-          700: "#101317",
-          600: "#171b21",
-          500: "#1f242c",
-          400: "#2a313a",
-          300: "#3a434f",
+          900: "#0c0a06",
+          800: "#13110b",
+          700: "#1b1810",
+          600: "#241f15",
+          500: "#31291b",
+          400: "#403524",
+          300: "#564833",
         },
-        steel: "#8b95a3",
+        steel: "#a89a7e",
+        sand: "#d9c69a",
+        terracotta: "#b5623c",
         accent: {
-          DEFAULT: "#f5a623", // hazard amber
-          dim: "#b87d18",
+          DEFAULT: "#f0a72e", // desert sun amber
+          dim: "#bd7d1c",
         },
-        kill: "#ff3b30",
-        verify: "#33d17a",
+        kill: "#e8492f",
+        verify: "#8bb04f",
       },
       fontFamily: {
         sans: ["'Inter'", "system-ui", "sans-serif"],

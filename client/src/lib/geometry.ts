@@ -58,7 +58,7 @@ export function blankMap(creator: string, username: string): GameMap {
     thumbnail: null,
     objects,
     spawn_points: [],
-    lighting: { preset: "warehouse", intensity: 1 },
+    lighting: { preset: "desert", intensity: 1 },
     published: false,
     test_mode: false,
     created_at: now,

@@ -4,8 +4,9 @@ import { api } from "../lib/api";
 import type { GameMap } from "../lib/types";
 import { usePlayer } from "../lib/player";
 import { useGame } from "../lib/gameStore";
-import { WEAPONS } from "../lib/fps";
+import { WEAPONS, resolveRules } from "../lib/fps";
 import { FPSScene } from "../three/FPSScene";
+import { sound, unlockAudio } from "../lib/sound";
 import { Target, X } from "../components/icons";
 import { VerifyBadge } from "../components/IdentityModal";
 
@@ -32,7 +33,8 @@ export default function Game() {
       .then(async (m) => {
         if (cancelled) return;
         setMap(m);
-        reset("rifle", WEAPONS.rifle.mag, MATCH_SECONDS);
+        const r = resolveRules(m);
+        reset(r.starting_weapon, WEAPONS[r.starting_weapon].mag, MATCH_SECONDS);
         try {
           const { match } = await api.startMatch(m.map_id, "ffa", wallet || undefined);
           matchId.current = match.match_id;
@@ -90,9 +92,14 @@ export default function Game() {
     },
   };
 
-  const lock = () => (document.querySelector("canvas") as HTMLCanvasElement | null)?.requestPointerLock();
+  const lock = () => {
+    unlockAudio();
+    sound.ui();
+    (document.querySelector("canvas") as HTMLCanvasElement | null)?.requestPointerLock();
+  };
   const playAgain = () => {
-    reset("rifle", WEAPONS.rifle.mag, MATCH_SECONDS);
+    const r = map ? resolveRules(map) : { starting_weapon: "m4" as const };
+    reset(r.starting_weapon, WEAPONS[r.starting_weapon].mag, MATCH_SECONDS);
     api.startMatch(id!, "ffa", wallet || undefined).then(({ match }) => (matchId.current = match.match_id)).catch(() => {});
     setTimeout(lock, 50);
   };
@@ -115,8 +122,14 @@ export default function Game() {
 
       {/* Crosshair */}
       {game.status === "playing" && <div className="crosshair absolute inset-0 pointer-events-none" />}
-      {game.status === "playing" && performance.now() - game.hitMarker < 120 && (
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-kill text-2xl font-bold pointer-events-none">✕</div>
+      {game.status === "playing" && performance.now() - game.hitMarker < 140 && (
+        <div
+          className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-2xl font-bold pointer-events-none ${
+            performance.now() - game.headMarker < 140 ? "text-kill scale-125" : "text-white"
+          }`}
+        >
+          ✕
+        </div>
       )}
 
       {/* HUD */}

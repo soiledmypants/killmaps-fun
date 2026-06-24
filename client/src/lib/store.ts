@@ -12,6 +12,8 @@ interface EditorState {
   transformMode: TransformMode;
   snap: boolean;
   snapSize: number;
+  rotSnap: boolean;
+  scaleSnap: boolean;
   dirty: boolean;
   past: GameMap[];
   future: GameMap[];
@@ -23,12 +25,14 @@ interface EditorState {
   setTransformMode: (m: TransformMode) => void;
   toggleSnap: () => void;
   setSnapSize: (n: number) => void;
+  toggleRotSnap: () => void;
+  toggleScaleSnap: () => void;
 
   addObject: (kind: AssetKind, position: Vec3) => string;
   updateObject: (id: string, patch: Partial<MapObject>, history?: boolean) => void;
   deleteObject: (id: string) => void;
   duplicateSelected: () => void;
-  setMeta: (patch: Partial<Pick<GameMap, "title" | "description" | "lighting">>) => void;
+  setMeta: (patch: Partial<Pick<GameMap, "title" | "description" | "lighting" | "rules">>) => void;
 
   undo: () => void;
   redo: () => void;
@@ -44,6 +48,8 @@ export const useEditor = create<EditorState>((set, get) => ({
   transformMode: "translate",
   snap: true,
   snapSize: 1,
+  rotSnap: true,
+  scaleSnap: true,
   dirty: false,
   past: [],
   future: [],
@@ -62,6 +68,8 @@ export const useEditor = create<EditorState>((set, get) => ({
   setTransformMode: (transformMode) => set({ transformMode }),
   toggleSnap: () => set((s) => ({ snap: !s.snap })),
   setSnapSize: (snapSize) => set({ snapSize }),
+  toggleRotSnap: () => set((s) => ({ rotSnap: !s.rotSnap })),
+  toggleScaleSnap: () => set((s) => ({ scaleSnap: !s.scaleSnap })),
 
   addObject: (kind, position) => {
     const def = getAsset(kind);

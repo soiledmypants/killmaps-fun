@@ -58,7 +58,14 @@ export interface GameMap {
   thumbnail?: string | null;
   objects: MapObject[];
   spawn_points: SpawnPoint[];
-  lighting: { preset: "indoor" | "dusk" | "night" | "warehouse"; intensity: number };
+  lighting: { preset: "desert" | "dusk" | "night" | "indoor" | "warehouse"; intensity: number };
+  rules?: {
+    allowed_weapons: string[];
+    starting_weapon: string;
+    health: number;
+    armor: number;
+    reserve_mult?: number;
+  };
   map_config?: unknown;
   published: boolean;
   test_mode?: boolean;

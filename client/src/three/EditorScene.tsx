@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from "react";
-import { Canvas, ThreeEvent, useFrame } from "@react-three/fiber";
+import { Canvas, ThreeEvent, useFrame, useThree } from "@react-three/fiber";
 import { Grid, OrbitControls, TransformControls } from "@react-three/drei";
 import * as THREE from "three";
 import { useEditor } from "../lib/store";
@@ -8,46 +8,42 @@ import { snapVec } from "../lib/geometry";
 import { AssetMesh } from "./AssetMesh";
 import type { Vec3 } from "../lib/types";
 
-const LIGHT_PRESETS: Record<string, { sky: string; ground: string; sun: number; amb: number; fog: string }> = {
-  warehouse: { sky: "#3a4250", ground: "#0c0e12", sun: 1.0, amb: 0.55, fog: "#0b0e13" },
-  indoor: { sky: "#2b3038", ground: "#0a0c0f", sun: 0.7, amb: 0.6, fog: "#090b0e" },
-  dusk: { sky: "#6b4a3a", ground: "#11100f", sun: 0.9, amb: 0.4, fog: "#1a120c" },
-  night: { sky: "#1a2230", ground: "#070809", sun: 0.35, amb: 0.3, fog: "#05070a" },
+const PRESETS: Record<string, { sky: string; ground: string; sun: number; amb: number; fog: string; sunColor: string }> = {
+  desert: { sky: "#cfe0e8", ground: "#7a6238", sun: 1.5, amb: 0.85, fog: "#cdb78d", sunColor: "#ffe9c2" },
+  dusk: { sky: "#caa07a", ground: "#2a2018", sun: 1.0, amb: 0.5, fog: "#7a5a3a", sunColor: "#ffcaa0" },
+  night: { sky: "#2a3242", ground: "#0c0a06", sun: 0.4, amb: 0.35, fog: "#171410", sunColor: "#9fb0c8" },
+  indoor: { sky: "#b8b09c", ground: "#1a1610", sun: 0.8, amb: 0.7, fog: "#15120c", sunColor: "#ffe9c2" },
+  warehouse: { sky: "#b8b09c", ground: "#1a1610", sun: 1.0, amb: 0.6, fog: "#1a1610", sunColor: "#ffe6bf" },
 };
 
 function SceneLights({ preset }: { preset: string }) {
-  const p = LIGHT_PRESETS[preset] || LIGHT_PRESETS.warehouse;
+  const p = PRESETS[preset] || PRESETS.desert;
   return (
     <>
       <hemisphereLight args={[p.sky, p.ground, p.amb]} />
-      <directionalLight position={[30, 50, 20]} intensity={p.sun} castShadow shadow-mapSize={[2048, 2048]}>
+      <directionalLight position={[30, 50, 20]} intensity={p.sun} color={p.sunColor} castShadow shadow-mapSize={[2048, 2048]}>
         <orthographicCamera attach="shadow-camera" args={[-60, 60, 60, -60, 0.1, 200]} />
       </directionalLight>
-      <directionalLight position={[-20, 25, -15]} intensity={p.sun * 0.3} />
+      <directionalLight position={[-20, 25, -15]} intensity={p.sun * 0.3} color="#b9893f" />
     </>
   );
 }
 
 function Editor() {
-  const { map, selectedId, placing, transformMode, snap, snapSize, addObject, select, updateObject } = useEditor();
+  const { map, selectedId, placing, transformMode, snap, snapSize, rotSnap, scaleSnap, addObject, select, updateObject } = useEditor();
+  const { camera } = useThree();
   const proxy = useMemo(() => new THREE.Object3D(), []);
-  const orbitRef = useRef<any>(null);
-  const tcRef = useRef<any>(null);
+  const orbit = useRef<any>(null);
   const hoverRef = useRef<Vec3 | null>(null);
   const ghostRef = useRef<THREE.Group>(null);
+  const keys = useRef<Record<string, boolean>>({});
+  const speed = useRef(14);
+  const gizmoDrag = useRef(false);
 
   const selected = map?.objects.find((o) => o.id === selectedId) || null;
+  const preset = map?.lighting.preset || "desert";
 
-  // Ghost preview follows the cursor (hoverRef is mutated on pointer move).
-  useFrame(() => {
-    if (placing && ghostRef.current && hoverRef.current) {
-      const def = getAsset(placing);
-      const p = snap ? snapVec(hoverRef.current, snapSize) : hoverRef.current;
-      ghostRef.current.position.set(p[0], p[1] + def.size[1] / 2, p[2]);
-    }
-  });
-
-  // Sync the transform proxy whenever the selection changes.
+  // Sync the gizmo proxy when the selection changes.
   useEffect(() => {
     if (!selected) return;
     proxy.position.set(...selected.position);
@@ -55,91 +51,116 @@ function Editor() {
     proxy.scale.set(...selected.scale);
   }, [selectedId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const place = (e: ThreeEvent<PointerEvent>) => {
+  // Fly controls: WASD move, Q/E down/up, Shift faster, F focus selected.
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+      keys.current[e.code] = true;
+      if (e.code === "KeyF" && selected) {
+        const t = new THREE.Vector3(...selected.position);
+        if (orbit.current) orbit.current.target.copy(t);
+        camera.position.copy(t).add(new THREE.Vector3(7, 6, 7));
+      }
+    };
+    const up = (e: KeyboardEvent) => (keys.current[e.code] = false);
+    window.addEventListener("keydown", down);
+    window.addEventListener("keyup", up);
+    return () => {
+      window.removeEventListener("keydown", down);
+      window.removeEventListener("keyup", up);
+    };
+  }, [selected, camera]);
+
+  useFrame((_s, dt) => {
+    // ghost follows cursor
+    if (placing && ghostRef.current && hoverRef.current) {
+      const def = getAsset(placing);
+      const pp = snap ? snapVec(hoverRef.current, snapSize) : hoverRef.current;
+      ghostRef.current.position.set(pp[0], pp[1] + def.size[1] / 2, pp[2]);
+    }
+    // WASD fly (moves camera + orbit target together)
+    const k = keys.current;
+    const fwd = new THREE.Vector3();
+    camera.getWorldDirection(fwd);
+    fwd.y = 0;
+    fwd.normalize();
+    const right = new THREE.Vector3().crossVectors(fwd, new THREE.Vector3(0, 1, 0)).normalize();
+    const mv = new THREE.Vector3();
+    if (k["KeyW"]) mv.add(fwd);
+    if (k["KeyS"]) mv.sub(fwd);
+    if (k["KeyD"]) mv.add(right);
+    if (k["KeyA"]) mv.sub(right);
+    if (k["KeyE"]) mv.y += 1;
+    if (k["KeyQ"]) mv.y -= 1;
+    if (mv.lengthSq() > 0) {
+      mv.normalize().multiplyScalar(speed.current * dt * (k["ShiftLeft"] || k["ShiftRight"] ? 3 : 1));
+      camera.position.add(mv);
+      if (orbit.current) orbit.current.target.add(mv);
+    }
+  });
+
+  const placeAt = (point: Vec3) => {
     if (!placing) return;
-    e.stopPropagation();
     const def = getAsset(placing);
-    const y = e.point.y + def.size[1] / 2 + 0.001;
-    addObject(placing, [e.point.x, y, e.point.z]);
+    const xz = snap ? snapVec([point[0], 0, point[2]], snapSize) : [point[0], 0, point[2]];
+    addObject(placing, [xz[0], point[1] + def.size[1] / 2 + 0.001, xz[2]]);
   };
 
-  const onObjectChange = () => {
-    if (!selected) return;
-    updateObject(
-      selected.id,
-      {
-        position: [proxy.position.x, proxy.position.y, proxy.position.z],
-        rotation: [proxy.rotation.x, proxy.rotation.y, proxy.rotation.z],
-        scale: [
-          Math.max(0.1, proxy.scale.x),
-          Math.max(0.1, proxy.scale.y),
-          Math.max(0.1, proxy.scale.z),
-        ],
-      },
-      false
-    );
-  };
-
-  const onDragChange = (dragging: boolean) => {
-    if (orbitRef.current) orbitRef.current.enabled = !dragging;
-    if (!dragging && selected && snap && transformMode === "translate") {
-      const snapped = snapVec([proxy.position.x, proxy.position.y, proxy.position.z], snapSize);
-      proxy.position.set(...snapped);
-      updateObject(selected.id, { position: snapped }, true);
-    } else if (!dragging && selected) {
-      updateObject(selected.id, {}, true); // push a history checkpoint
+  const onObjectClick = (e: ThreeEvent<MouseEvent>, id: string) => {
+    if (gizmoDrag.current) return;
+    e.stopPropagation();
+    if (placing) {
+      // place on top face, else on the floor under the cursor
+      let y = 0;
+      const n = e.face?.normal?.clone().transformDirection(e.object.matrixWorld);
+      if (n && n.y > 0.5) y = e.point.y;
+      placeAt([e.point.x, y, e.point.z]);
+    } else {
+      select(id);
     }
   };
 
   return (
     <>
-      <color attach="background" args={["#0a0c0f"]} />
-      <fog attach="fog" args={[(LIGHT_PRESETS[map?.lighting.preset || "warehouse"] || LIGHT_PRESETS.warehouse).fog, 60, 160]} />
-      <SceneLights preset={map?.lighting.preset || "warehouse"} />
+      <color attach="background" args={[(PRESETS[preset] || PRESETS.desert).fog]} />
+      <fog attach="fog" args={[(PRESETS[preset] || PRESETS.desert).fog, 70, 180]} />
+      <SceneLights preset={preset} />
 
       <Grid
         args={[400, 400]}
         cellSize={1}
         cellThickness={0.5}
-        cellColor="#1b2027"
+        cellColor="#2a2417"
         sectionSize={8}
         sectionThickness={1}
-        sectionColor="#2c3744"
-        fadeDistance={140}
+        sectionColor="#4a3d27"
+        fadeDistance={150}
         fadeStrength={1.5}
         infiniteGrid
         position={[0, -0.01, 0]}
       />
 
-      {/* Raycast catch-plane for placement */}
+      {/* ground catch-plane: left-click places (when a tool is armed) or deselects */}
       <mesh
         rotation={[-Math.PI / 2, 0, 0]}
-        position={[0, 0, 0]}
-        onPointerDown={(e) => (placing ? place(e) : select(null))}
-        onPointerMove={(e) => (hoverRef.current = [e.point.x, e.point.y, e.point.z])}
+        onClick={(e) => {
+          if (gizmoDrag.current) return;
+          if (placing) placeAt([e.point.x, 0, e.point.z]);
+          else select(null);
+        }}
+        onPointerMove={(e) => (hoverRef.current = [e.point.x, 0, e.point.z])}
       >
-        <planeGeometry args={[1000, 1000]} />
+        <planeGeometry args={[2000, 2000]} />
         <meshBasicMaterial transparent opacity={0} depthWrite={false} />
       </mesh>
 
-      {/* Placed objects */}
       {map?.objects.map((o) => (
-        <group
-          key={o.id}
-          onPointerDown={(e) => {
-            if (placing) {
-              place(e);
-            } else {
-              e.stopPropagation();
-              select(o.id);
-            }
-          }}
-        >
+        <group key={o.id} onClick={(e) => onObjectClick(e, o.id)}>
           <AssetMesh object={o} selected={o.id === selectedId} />
         </group>
       ))}
 
-      {/* Ghost preview while placing (group is moved each frame to follow cursor) */}
       {placing && (
         <group ref={ghostRef}>
           <AssetMesh object={{ id: "ghost", kind: placing, position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1] }} ghost />
@@ -149,23 +170,55 @@ function Editor() {
       <primitive object={proxy} />
       {selected && (
         <TransformControls
-          ref={tcRef}
           object={proxy}
           mode={transformMode}
-          onObjectChange={onObjectChange}
-          onMouseDown={() => onDragChange(true)}
-          onMouseUp={() => onDragChange(false)}
+          rotationSnap={rotSnap ? Math.PI / 12 : null}
+          scaleSnap={scaleSnap ? 0.25 : null}
+          translationSnap={snap ? snapSize : null}
+          onObjectChange={() => {
+            updateObject(
+              selected.id,
+              {
+                position: [proxy.position.x, proxy.position.y, proxy.position.z],
+                rotation: [proxy.rotation.x, proxy.rotation.y, proxy.rotation.z],
+                scale: [Math.max(0.1, proxy.scale.x), Math.max(0.1, proxy.scale.y), Math.max(0.1, proxy.scale.z)],
+              },
+              false
+            );
+          }}
+          onMouseDown={() => {
+            gizmoDrag.current = true;
+            if (orbit.current) orbit.current.enabled = false;
+          }}
+          onMouseUp={() => {
+            if (orbit.current) orbit.current.enabled = true;
+            updateObject(selected.id, {}, true); // history checkpoint
+            setTimeout(() => (gizmoDrag.current = false), 0);
+          }}
         />
       )}
 
-      <OrbitControls ref={orbitRef} makeDefault enableDamping dampingFactor={0.1} maxPolarAngle={Math.PI / 2.05} />
+      {/* Camera: LEFT disabled (free for placing/selecting), RIGHT look, MIDDLE pan, wheel zoom */}
+      <OrbitControls
+        ref={orbit}
+        makeDefault
+        enableDamping
+        dampingFactor={0.12}
+        maxPolarAngle={Math.PI / 2.05}
+        mouseButtons={{ LEFT: null as any, MIDDLE: THREE.MOUSE.PAN, RIGHT: THREE.MOUSE.ROTATE }}
+      />
     </>
   );
 }
 
 export function EditorScene() {
   return (
-    <Canvas shadows camera={{ position: [22, 20, 22], fov: 50 }} dpr={[1, 2]}>
+    <Canvas
+      shadows
+      camera={{ position: [22, 20, 22], fov: 50 }}
+      dpr={[1, 2]}
+      onContextMenu={(e) => e.preventDefault()}
+    >
       <Editor />
     </Canvas>
   );

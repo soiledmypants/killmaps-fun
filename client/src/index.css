@@ -20,9 +20,10 @@ body,
 
 body {
   background:
-    radial-gradient(1200px 600px at 70% -10%, rgba(245, 166, 35, 0.06), transparent 60%),
-    #070809;
-  color: #d7dce3;
+    radial-gradient(1200px 700px at 70% -15%, rgba(240, 167, 46, 0.1), transparent 60%),
+    radial-gradient(900px 500px at 10% 110%, rgba(181, 98, 60, 0.08), transparent 60%),
+    #0c0a06;
+  color: #ddd3c2;
   font-family: "Inter", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   letter-spacing: 0.01em;
