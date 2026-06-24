@@ -107,9 +107,12 @@ export interface Transaction {
 
 export interface RewardsView {
   wallet: string;
-  balance: number; // settled "Ledger Balance" (USD)
-  pending: number; // awaiting next settlement
-  lifetime_settled: number;
+  currency: string; // "SOL"
+  reward_per_kill: number; // SOL
+  balance: number; // settled lifetime SOL earned
+  pending: number; // SOL awaiting next settlement
+  lifetime_settled: number; // SOL
+  last_settlement: number; // SOL of most recent settlement
   validated_kills: number;
   unique_players_today: number;
   activity_score: number;
@@ -143,6 +146,7 @@ export interface PublicConfig {
   verifyLive: boolean;
   devVerifyOff: boolean;
   maxPlayers?: number;
+  currency?: string;
   rewardPerKill?: number;
   settlementIntervalMs?: number;
   dailyCreatorCap?: number;

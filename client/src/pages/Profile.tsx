@@ -4,7 +4,7 @@ import { usePlayer } from "../lib/player";
 import { api } from "../lib/api";
 import type { RewardsView } from "../lib/types";
 import { IdentityModal, VerifyBadge } from "../components/IdentityModal";
-import { shortWallet } from "../lib/config";
+import { shortWallet, fmtSol } from "../lib/config";
 import { User, Shield } from "../components/icons";
 
 export default function Profile() {
@@ -71,12 +71,13 @@ export default function Profile() {
       </div>
 
       <div className="panel p-6">
-        <h2 className="font-bold text-white mb-4">Creator Reward Ledger</h2>
+        <h2 className="font-bold text-white">Creator Earnings (SOL)</h2>
+        <p className="text-[11px] text-steel mb-4">Paid by the Treasury wallet · settles every 5 minutes</p>
         <div className="grid grid-cols-2 gap-3">
-          <Stat label="Ledger Balance" value={`$${(rewards?.balance ?? 0).toFixed(2)}`} accent />
-          <Stat label="Pending Settlement" value={`$${(rewards?.pending ?? 0).toFixed(2)}`} />
+          <Stat label="Pending SOL Rewards" value={fmtSol(rewards?.pending)} accent />
+          <Stat label="Lifetime SOL Earned" value={fmtSol(rewards?.balance)} accent />
           <Stat label="Validated Kills" value={rewards?.validated_kills ?? 0} />
-          <Stat label="Lifetime Settled" value={`$${(rewards?.lifetime_settled ?? 0).toFixed(2)}`} accent />
+          <Stat label="Last Settlement" value={fmtSol(rewards?.last_settlement)} />
         </div>
         <Link to="/dashboard" className="btn w-full mt-4 h-9 text-xs">Open creator dashboard</Link>
       </div>

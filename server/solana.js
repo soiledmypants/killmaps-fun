@@ -141,6 +141,17 @@ export async function getTokenBalance(wallet) {
   }
 }
 
+/** On-chain SOL balance of an address (for treasury transparency). null in MOCK / on error. */
+export async function getSolBalance(address) {
+  if (!connection || !isValidPublicKey(address)) return null;
+  try {
+    const lamports = await connection.getBalance(new PublicKey(address.trim()), "confirmed");
+    return lamports / LAMPORTS_PER_SOL;
+  } catch {
+    return null;
+  }
+}
+
 export { LAMPORTS_PER_SOL, MIN_TOKENS, TOKEN_CA };
 
 export const solanaConfig = {

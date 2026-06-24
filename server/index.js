@@ -3,11 +3,12 @@ import express from "express";
 import cors from "cors";
 import { read, write, init, flush } from "./db.js";
 import { ANTIFARM, uid, fakeTxHash } from "./antifarm.js";
-import { recordValidatedKill, rewardsView, settle, REWARD } from "./rewards.js";
+import { recordValidatedKill, rewardsView, settle, treasuryStats, REWARD } from "./rewards.js";
 import { initRealtime, getRoomCounts } from "./realtime.js";
 import {
   sendPayout,
   getTokenBalance,
+  getSolBalance,
   isValidPublicKey,
   solanaConfig,
   logStartup,
@@ -120,9 +121,10 @@ function publicConfig() {
     treasuryWallet: solanaConfig.treasuryPublicKey,
     rewardsWallet: solanaConfig.rewardsPublicKey,
     maxPlayers: MAX_PLAYERS,
-    rewardPerKill: REWARD.PER_KILL,
+    currency: "SOL",
+    rewardPerKill: REWARD.PER_KILL, // SOL
     settlementIntervalMs: REWARD.SETTLEMENT_MS,
-    dailyCreatorCap: REWARD.DAILY_CAP,
+    dailyCreatorCap: REWARD.DAILY_CAP, // SOL
     antifarm: {
       spawnProtectionMs: ANTIFARM.SPAWN_PROTECTION_MS,
       minMatchMs: ANTIFARM.MIN_MATCH_MS,
@@ -140,13 +142,17 @@ function publicConfig() {
 app.get("/api/config", (_req, res) => res.json(publicConfig()));
 app.get("/api/health", (_req, res) => res.json({ ok: true }));
 
-app.get("/api/treasury", (_req, res) => {
+// Treasury transparency. Creator rewards are paid FROM the treasury wallet (all SOL).
+app.get("/api/treasury", async (_req, res) => {
   const db = read();
+  const stats = treasuryStats(db);
+  const onchainBalance = await getSolBalance(solanaConfig.treasuryPublicKey); // real SOL or null (MOCK)
   res.json({
-    treasury: db.treasury.balance,
-    rewards: db.treasury.rewards,
-    treasuryWallet: solanaConfig.treasuryPublicKey,
-    rewardsWallet: solanaConfig.rewardsPublicKey,
+    currency: "SOL",
+    treasuryWallet: solanaConfig.treasuryPublicKey, // pays creator rewards
+    treasuryBalance: onchainBalance, // on-chain SOL (null in MOCK / no RPC)
+    pendingRewards: stats.pending, // SOL owed to creators, awaiting settlement
+    totalPaid: stats.total_paid, // lifetime SOL paid to creators
     onchain: solanaConfig.treasuryLive,
     cluster: SOLANA_CLUSTER,
     solscanCluster: SOLSCAN_CLUSTER,
@@ -451,7 +457,7 @@ init()
     server.listen(PORT, () => {
       console.log(`[killmaps] server on http://localhost:${PORT}`);
       console.log(`[db] storage backend: ${mode}${mode === "file" ? " (ephemeral — set DATABASE_URL for persistence)" : " (persistent)"}`);
-      console.log(`[rewards] settlement every ${Math.round(REWARD.SETTLEMENT_MS / 1000)}s · $${REWARD.PER_KILL}/validated kill · daily cap $${REWARD.DAILY_CAP}`);
+      console.log(`[rewards] settlement every ${Math.round(REWARD.SETTLEMENT_MS / 1000)}s · ${REWARD.PER_KILL} SOL/validated kill · daily cap ${REWARD.DAILY_CAP} SOL`);
       logStartup();
       setInterval(runSettlement, REWARD.SETTLEMENT_MS);
     });

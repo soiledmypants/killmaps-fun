@@ -34,8 +34,9 @@ const DEFAULT_DB = {
   flags: [],
   // Reward Ledger Settlement schedule (timestamps in ms).
   settlement: { last: 0, next: 0 },
-  // Treasury funds player payouts; rewards pool funds creator reward settlements.
-  treasury: { balance: 0, rewards: 0 },
+  // Treasury wallet is the source of ALL creator reward settlements. total_paid =
+  // lifetime SOL paid to creators (transparency). rewards kept for back-compat (unused).
+  treasury: { balance: 0, rewards: 0, total_paid: 0 },
 };
 
 let cache = null;
@@ -112,7 +113,8 @@ export function read() {
   if (!Array.isArray(cache.transactions)) cache.transactions = [];
   if (!Array.isArray(cache.flags)) cache.flags = [];
   if (!cache.settlement) cache.settlement = { last: 0, next: 0 };
-  if (!cache.treasury) cache.treasury = { balance: 0, rewards: 0 };
+  if (!cache.treasury) cache.treasury = { balance: 0, rewards: 0, total_paid: 0 };
+  if (typeof cache.treasury.total_paid !== "number") cache.treasury.total_paid = 0;
   return cache;
 }
 

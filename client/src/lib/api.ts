@@ -69,7 +69,7 @@ export interface KillResult {
 
 export const api = {
   config: (): Promise<PublicConfig> => request("/config"),
-  treasury: (): Promise<{ treasury: number; rewards: number; treasuryWallet: string | null; rewardsWallet: string | null; onchain: boolean; cluster: string; solscanCluster: string }> =>
+  treasury: (): Promise<{ currency: string; treasuryWallet: string | null; treasuryBalance: number | null; pendingRewards: number; totalPaid: number; onchain: boolean; cluster: string; solscanCluster: string }> =>
     request("/treasury"),
 
   // ---- players ----

@@ -9,13 +9,17 @@
 import { evaluateKill, uid } from "./antifarm.js";
 import { sendPayout, isValidPublicKey } from "./solana.js";
 
+// All reward values are denominated, stored, and paid in SOL (no USD, no conversion).
+// Creator rewards are paid from the TREASURY wallet (see settle() -> source "treasury").
+export const CURRENCY = "SOL";
 export const REWARD = {
-  PER_KILL: Number(process.env.REWARD_PER_KILL || 1), // $ per validated PvP kill
-  PER_UNIQUE: Number(process.env.REWARD_PER_UNIQUE || 0.1), // $ per unique player / day
-  PER_MINUTE: Number(process.env.REWARD_PER_MINUTE || 0.02), // $ per qualified active minute
-  DAILY_CAP: Number(process.env.DAILY_CREATOR_CAP || 500), // $ pending / day / creator
+  PER_KILL: Number(process.env.REWARD_PER_KILL || 0.005), // SOL per validated real-player kill (NPC kills = 0)
+  PER_UNIQUE: Number(process.env.REWARD_PER_UNIQUE || 0), // off by default — reward is per validated kill
+  PER_MINUTE: Number(process.env.REWARD_PER_MINUTE || 0), // off by default
+  DAILY_CAP: Number(process.env.DAILY_CREATOR_CAP || 5), // SOL pending / day / creator
   SETTLEMENT_MS: Number(process.env.SETTLEMENT_MS || 5 * 60 * 1000),
 };
+const round = (n) => Math.round(n * 1e6) / 1e6; // 6-dp SOL precision
 
 const day = () => new Date().toISOString().slice(0, 10);
 const norm = (w) => (w || "").trim();
@@ -40,9 +44,9 @@ export function getLedger(db, wallet) {
 function credit(L, amount) {
   if (amount <= 0 || L.daily_pending >= REWARD.DAILY_CAP) return 0;
   const add = Math.min(amount, REWARD.DAILY_CAP - L.daily_pending);
-  L.pending = +(L.pending + add).toFixed(4);
-  L.daily_pending = +(L.daily_pending + add).toFixed(4);
-  return add;
+  L.pending = round(L.pending + add); // SOL
+  L.daily_pending = round(L.daily_pending + add);
+  return round(add);
 }
 
 /** First time a unique verified player generates activity on a creator's map today. */
@@ -118,8 +122,10 @@ export function recordValidatedKill(db, ctx) {
 }
 
 /**
- * Reward Ledger Settlement: validate pending balances and move pending -> settled.
- * In LIVE mode (rewards/treasury wallet configured) this also pays the creator on-chain.
+ * Reward Ledger Settlement: validate pending creator balances and pay them out.
+ * Creator reward payouts are ALWAYS signed by the TREASURY wallet (source "treasury" =>
+ * TREASURY_WALLET_PRIVATE_KEY in solana.js). The Creator-Rewards/dev wallet is NOT used.
+ * In LIVE mode this sends real SOL; in MOCK it records the settlement only.
  * Returns the number of creators settled.
  */
 export async function settle(db, recordTx) {
@@ -127,24 +133,39 @@ export async function settle(db, recordTx) {
   for (const L of Object.values(db.ledger)) {
     if (L.flagged || !(L.pending > 0)) continue;
     if (!isValidPublicKey(L.wallet)) continue;
-    const amount = +L.pending.toFixed(4);
+    const amount = round(L.pending); // SOL
     let tx;
     try {
-      tx = await recordTx({ type: "settlement", wallet: L.wallet, amount, source: "rewards", meta: { kind: "creator" } });
+      // source "treasury" -> signed by TREASURY_WALLET_PRIVATE_KEY
+      tx = await recordTx({ type: "settlement", wallet: L.wallet, amount, source: "treasury", meta: { kind: "creator", paid_by: "treasury" } });
     } catch (e) {
       // on-chain settlement failed — keep pending, retry next cycle
       console.error(`[settlement] failed for ${L.wallet}: ${e.message}`);
       continue;
     }
-    L.settled = +(L.settled + amount).toFixed(4);
-    L.lifetime_settled = +(L.lifetime_settled + amount).toFixed(4);
+    L.settled = round(L.settled + amount);
+    L.lifetime_settled = round(L.lifetime_settled + amount);
+    L.last_settlement = amount;
     L.pending = 0;
     settled += 1;
-    db.treasury.rewards = Math.max(0, +(db.treasury.rewards - amount).toFixed(4));
+    // Treasury accounting (transparency): draw down balance, track lifetime paid.
+    db.treasury.balance = round((db.treasury.balance || 0) - amount);
+    db.treasury.total_paid = round((db.treasury.total_paid || 0) + amount);
     void tx;
   }
   db.settlement = { last: Date.now(), next: Date.now() + REWARD.SETTLEMENT_MS };
   return settled;
+}
+
+/** Global treasury transparency figures (all SOL). */
+export function treasuryStats(db) {
+  const pending = round(Object.values(db.ledger).reduce((s, L) => s + (L.pending || 0), 0));
+  return {
+    pending, // SOL owed to creators, not yet settled
+    total_paid: round(db.treasury.total_paid || 0), // lifetime SOL paid to creators
+    ledger_balance: round(db.treasury.balance || 0), // internal treasury accounting
+    currency: CURRENCY,
+  };
 }
 
 export function rewardsView(db, wallet, activeMatches = 0) {
@@ -153,17 +174,20 @@ export function rewardsView(db, wallet, activeMatches = 0) {
   const myMaps = Object.values(db.maps).filter((m) => m.creator === norm(wallet));
   return {
     wallet: norm(wallet),
-    balance: L.settled, // settled "Ledger Balance"
-    pending: L.pending, // awaiting next settlement
-    lifetime_settled: L.lifetime_settled,
+    currency: CURRENCY, // "SOL"
+    reward_per_kill: REWARD.PER_KILL, // SOL
+    balance: L.settled, // settled lifetime SOL earned
+    pending: L.pending, // SOL awaiting next settlement
+    lifetime_settled: L.lifetime_settled, // SOL
+    last_settlement: L.last_settlement || 0, // SOL of the most recent settlement
     validated_kills: L.validated_kills,
     unique_players_today: L.unique_players.length,
     activity_score: Math.round(L.activity_score),
     active_matches: activeMatches,
     next_settlement_ms: Math.max(0, next - Date.now()),
     settlement_interval_ms: REWARD.SETTLEMENT_MS,
-    daily_cap: REWARD.DAILY_CAP,
-    daily_pending: L.daily_pending,
+    daily_cap: REWARD.DAILY_CAP, // SOL
+    daily_pending: L.daily_pending, // SOL
     flagged: !!L.flagged,
     maps: myMaps.map((m) => ({
       map_id: m.map_id, title: m.title,

@@ -2,12 +2,12 @@ import { useEffect, useState } from "react";
 import { api } from "../lib/api";
 import type { Transaction } from "../lib/types";
 import { usePlayer } from "../lib/player";
-import { shortWallet, solscanTx } from "../lib/config";
+import { shortWallet, solscanTx, fmtSol } from "../lib/config";
 import { Receipt } from "../components/icons";
 
 const TYPE_LABEL: Record<string, { label: string; cls: string }> = {
-  settlement: { label: "Ledger settlement", cls: "text-accent" },
-  creator_reward: { label: "Creator payout", cls: "text-accent" },
+  settlement: { label: "Treasury settlement", cls: "text-accent" },
+  creator_reward: { label: "Treasury payout", cls: "text-accent" },
   player_reward: { label: "Player payout", cls: "text-verify" },
 };
 
@@ -26,7 +26,7 @@ export default function Transactions() {
       <h1 className="text-2xl font-bold text-white flex items-center gap-2 mb-1">
         <Receipt size={22} className="text-accent" /> Transactions
       </h1>
-      <p className="text-steel text-sm mb-6">Reward claims and treasury payouts. Rewards accrue to a ledger and are paid in batches — never per kill.</p>
+      <p className="text-steel text-sm mb-6">Creator reward settlements, paid in <span className="text-accent">SOL</span>. Rewards accrue to the ledger and settle in batches every 5 minutes — never per kill.</p>
 
       <div className="panel overflow-hidden">
         <div className="grid grid-cols-12 px-4 py-2.5 border-b border-base-500 label">
@@ -47,7 +47,7 @@ export default function Transactions() {
               <div key={t.id} className="grid grid-cols-12 px-4 py-3 border-b border-base-600 items-center text-sm hover:bg-base-700/40">
                 <div className={`col-span-3 font-semibold ${meta.cls}`}>{meta.label}</div>
                 <div className="col-span-3 font-mono text-steel">{shortWallet(t.wallet, 5)}</div>
-                <div className="col-span-2 text-right font-mono text-white">${typeof t.amount === "number" ? t.amount.toFixed(2) : t.amount}</div>
+                <div className="col-span-2 text-right font-mono text-verify">+{fmtSol(typeof t.amount === "number" ? t.amount : 0)}</div>
                 <div className="col-span-2 text-right font-mono text-steel">{t.status}</div>
                 <div className="col-span-2 text-right">
                   {t.onchain ? (

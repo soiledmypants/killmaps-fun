@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { api } from "../lib/api";
 import { usePlayer } from "../lib/player";
 import type { GameMap, RewardsView } from "../lib/types";
+import { fmtSol, shortWallet } from "../lib/config";
 import { MapThumb } from "../components/MapThumb";
 import { Coins, Wrench, Play, Target } from "../components/icons";
 
@@ -10,6 +11,7 @@ export default function Dashboard() {
   const { wallet } = usePlayer();
   const [maps, setMaps] = useState<GameMap[]>([]);
   const [rewards, setRewards] = useState<RewardsView | null>(null);
+  const [treasury, setTreasury] = useState<{ treasuryBalance: number | null; pendingRewards: number; totalPaid: number; treasuryWallet: string | null } | null>(null);
   const [countdown, setCountdown] = useState(0);
   const baseNext = useRef(0);
   const fetchedAt = useRef(0);
@@ -17,6 +19,7 @@ export default function Dashboard() {
   const refresh = useCallback(() => {
     if (!wallet) return;
     api.listMaps({ creator: wallet }).then(setMaps).catch(() => {});
+    api.treasury().then(setTreasury).catch(() => {});
     api.rewards(wallet).then((r) => {
       setRewards(r);
       baseNext.current = r.next_settlement_ms;
@@ -55,19 +58,33 @@ export default function Dashboard() {
       <h1 className="text-2xl font-bold text-white flex items-center gap-2 mb-1">
         <Coins size={22} className="text-accent" /> Creator Reward Ledger
       </h1>
-      <p className="text-steel text-sm mb-6">Validated player activity accrues here. The ledger settles automatically every 5 minutes — never per kill.</p>
+      <p className="text-steel text-sm mb-6">Creator earnings accrue in <span className="text-accent">SOL</span> from validated real-player kills (NPC kills pay 0). The ledger settles automatically every 5 minutes — never per kill — and is <span className="text-white">paid by the Treasury wallet</span>. Reward per validated kill: <span className="font-mono text-white">{fmtSol(rewards?.reward_per_kill, 3)}</span>.</p>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-        <Big label="Ledger Balance" value={`$${(rewards?.balance ?? 0).toFixed(2)}`} accent big />
-        <Big label="Pending Settlement" value={`$${(rewards?.pending ?? 0).toFixed(2)}`} />
+        <Big label="Pending SOL Rewards" value={fmtSol(rewards?.pending)} accent big />
+        <Big label="Lifetime SOL Earned" value={fmtSol(rewards?.balance)} accent />
+        <Big label="Last Settlement" value={fmtSol(rewards?.last_settlement)} />
         <Big label="Validated Kills" value={`${rewards?.validated_kills ?? 0}`} />
-        <Big label="Unique Players Today" value={`${rewards?.unique_players_today ?? 0}`} />
       </div>
 
-      <div className="grid sm:grid-cols-3 gap-3 mb-8">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         <Panel label="Next Settlement"><span className="font-mono text-3xl text-accent">{mm}:{ss}</span></Panel>
         <Panel label="Active Matches"><span className="font-mono text-3xl text-white">{rewards?.active_matches ?? 0}</span></Panel>
+        <Panel label="Unique Players Today"><span className="font-mono text-3xl text-white">{rewards?.unique_players_today ?? 0}</span></Panel>
         <Panel label="Activity Score"><span className="font-mono text-3xl text-white">{rewards?.activity_score ?? 0}</span></Panel>
+      </div>
+
+      {/* Treasury transparency — creator rewards are paid by the Treasury wallet */}
+      <div className="panel p-5 mb-8">
+        <div className="flex items-center justify-between mb-3">
+          <span className="label">Treasury · Paid by Treasury</span>
+          <span className="font-mono text-[11px] text-steel">{shortWallet(treasury?.treasuryWallet, 5)}</span>
+        </div>
+        <div className="grid sm:grid-cols-3 gap-3">
+          <div><div className="label">Treasury Balance</div><div className="font-mono text-2xl text-white mt-1">{treasury?.treasuryBalance != null ? fmtSol(treasury.treasuryBalance) : "—"}</div></div>
+          <div><div className="label">Pending Rewards</div><div className="font-mono text-2xl text-accent mt-1">{fmtSol(treasury?.pendingRewards)}</div></div>
+          <div><div className="label">Total Paid Out</div><div className="font-mono text-2xl text-verify mt-1">{fmtSol(treasury?.totalPaid)}</div></div>
+        </div>
       </div>
 
       {rewards?.flagged && <div className="panel p-3 text-kill text-sm mb-6">This account is flagged for review — settlements are paused.</div>}

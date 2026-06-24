@@ -36,10 +36,12 @@ services:
       # The pump.fun token contract address players must hold to be verified.
       - key: TOKEN_CA
         value: C3RxH72uCos4VT2VZ6Y4LgthHy9k4uSwQGxiyxDBpump
-      # Treasury wallet — funds the reward pool / player payouts.
+      # Treasury wallet — signs ALL creator reward settlements (and player payouts).
+      # This is the ONLY wallet that pays creator rewards.
       - key: TREASURY_WALLET_PRIVATE_KEY
         sync: false
-      # Creator Rewards wallet — pays creator reward claims (separate wallet).
+      # Dev/admin wallet (project ownership, buybacks, treasury funding). Kept separate
+      # and NOT used for creator reward payouts.
       - key: CREATOR_REWARDS_WALLET_PRIVATE_KEY
         sync: false
       - key: TREASURY_PUBLIC_KEY

@@ -17,6 +17,11 @@ export const BRAND = "PumpStrike";
 
 export const MIN_TOKENS_DISPLAY = 250000;
 
+/** Format a SOL amount for display, e.g. 0.235 SOL. All rewards are denominated in SOL. */
+export function fmtSol(n: number | null | undefined, dp = 3): string {
+  return `${(Number(n) || 0).toFixed(dp)} SOL`;
+}
+
 export function solscanTx(sig: string, cluster = "mainnet"): string {
   const q = cluster && cluster !== "mainnet" ? `?cluster=${cluster}` : "";
   return `https://solscan.io/tx/${sig}${q}`;

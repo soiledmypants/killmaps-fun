@@ -6,7 +6,7 @@ import { IdentityModal, VerifyBadge } from "../components/IdentityModal";
 import { MapThumb } from "../components/MapThumb";
 import { usePlayer } from "../lib/player";
 import { api } from "../lib/api";
-import { shortWallet } from "../lib/config";
+import { shortWallet, fmtSol } from "../lib/config";
 import type { GameMap } from "../lib/types";
 import { Target, Wrench, Coins, Globe, Play, Shield, User } from "../components/icons";
 
@@ -14,13 +14,13 @@ export default function Home() {
   const { wallet, username, player, config } = usePlayer();
   const [maps, setMaps] = useState<GameMap[]>([]);
   const [featured, setFeatured] = useState<GameMap | null>(null);
-  const [rewardsPool, setRewardsPool] = useState<number | null>(null);
+  const [totalPaid, setTotalPaid] = useState<number | null>(null);
   const [modal, setModal] = useState(false);
 
   useEffect(() => {
     api.listMaps({ published: true, sort: "newest" }).then((m) => setMaps(m)).catch(() => {});
     api.listMaps({ published: true, sort: "trending" }).then((m) => setFeatured(m[0] || null)).catch(() => {});
-    api.treasury().then((t) => setRewardsPool(t.rewards)).catch(() => {});
+    api.treasury().then((t) => setTotalPaid(t.totalPaid)).catch(() => {});
   }, []);
 
   const mapsLive = maps.length;
@@ -93,7 +93,7 @@ export default function Home() {
           <Row label="Maps live"><span className="text-accent font-mono">{mapsLive}</span></Row>
           <Row label="Kills tracked"><span className="text-accent font-mono">{killsTracked}</span></Row>
           <Row label="Verified players"><span className="text-accent font-mono">{playersTracked}</span></Row>
-          <Row label="Rewards pool"><span className="text-accent font-mono">{rewardsPool != null ? `${rewardsPool} SOL` : "—"}</span></Row>
+          <Row label="Paid to creators"><span className="text-accent font-mono">{totalPaid != null ? fmtSol(totalPaid) : "—"}</span></Row>
         </Panel>
       </aside>
 
