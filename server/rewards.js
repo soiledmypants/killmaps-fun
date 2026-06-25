@@ -126,21 +126,25 @@ export function recordValidatedKill(db, ctx) {
   // ---- reward-pipeline debug snapshot + staged logs ----
   const matchMs = match ? now - match.started_at : null;
   const isPvp = !!(killer && victim); // both sides are registered players
+  const creatorIsPlayer = !!(map && (kill.killer === norm(map.creator) || kill.victim === norm(map.creator)));
   const summary = {
     killer: kill.killer || null, victim: kill.victim || "(npc/unregistered)", creator: kill.creator || null,
     weapon: kill.weapon, head: kill.head, isPvp, counted, credited, reasons: kill.reasons, score: verdict.score, matchMs,
     sameWallet: !!(kill.killer && kill.killer === kill.victim),
     sameIp: !!(killerIp && victimIp && killerIp === victimIp),
+    creatorIsPlayer, selfFarmBypassed: !!verdict.selfFarmBypassed, // testing-only bypass of creator-self-farm
     killerRegistered: !!killer, victimRegistered: !!victim,
     killerVerified: !!(killer && killer.verified), victimVerified: !!(victim && victim.verified),
     killerBalance: killer?.token_balance ?? null, victimBalance: victim?.token_balance ?? null,
     timestamp: now,
   };
   db.debug = db.debug || {};
+  db.debug.creatorSelfFarmBypass = REWARD_MODE === "testing"; // current mode flag
   if (isPvp) db.debug.lastPvpKill = summary; else db.debug.lastNpcKill = summary;
   if (counted) db.debug.lastAccepted = summary;
   else { db.debug.lastRejected = summary; db.debug.lastRejectionReason = kill.reasons.join(", "); }
 
+  if (verdict.selfFarmBypassed) console.log(`[Reward] Creator-self-farm check BYPASSED (testing mode) — creator ${kill.creator} is a player on this map`);
   console.log(`[Reward] Kill received: killer=${summary.killer || "?"} victim=${summary.victim} creator=${summary.creator || "?"} weapon=${kill.weapon} head=${kill.head} pvp=${isPvp} matchMs=${matchMs}`);
   if (counted) {
     console.log(`[Reward] Kill validation PASSED — ledger +${credited} SOL credited to creator ${kill.creator} (pending now ${getLedger(db, kill.creator).pending} SOL, validated_kills ${getLedger(db, kill.creator).validated_kills})`);

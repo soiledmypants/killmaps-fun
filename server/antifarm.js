@@ -85,9 +85,16 @@ export function evaluateKill(db, { map, match, killer, victim, event = {}, now =
   // ---- identity / self-farm guards ----
   const kw = norm(killer?.wallet || event.killer);
   const vw = norm(victim?.wallet || event.victim);
+  // Same-wallet farming is ALWAYS blocked (both modes).
   if (kw && vw && kw === vw) reasons.push("killer and victim are the same wallet");
-  if (map && (kw === norm(map.creator) || vw === norm(map.creator)))
-    reasons.push("creator cannot farm their own map");
+  // Creator-self-farm: blocked in LAUNCH mode. In TESTING mode it's bypassed so a
+  // creator can verify payouts on their own map without a third wallet.
+  const creatorInvolved = !!(map && (kw === norm(map.creator) || vw === norm(map.creator)));
+  let selfFarmBypassed = false;
+  if (creatorInvolved) {
+    if (REWARD_MODE === "launch") reasons.push("creator cannot farm their own map");
+    else selfFarmBypassed = true;
+  }
 
   // ---- spawn protection ----
   if (event.time_since_spawn_ms != null && event.time_since_spawn_ms < ANTIFARM.SPAWN_PROTECTION_MS)
@@ -112,7 +119,7 @@ export function evaluateKill(db, { map, match, killer, victim, event = {}, now =
 
   // Cleanliness score: full marks minus a penalty per failed rule.
   const score = Math.max(0, 100 - reasons.length * 20);
-  return { counted: reasons.length === 0, reasons: [...new Set(reasons)], score };
+  return { counted: reasons.length === 0, reasons: [...new Set(reasons)], score, selfFarmBypassed };
 }
 
 /** Whether a map has met the creator reward unlock thresholds and is not locked. */

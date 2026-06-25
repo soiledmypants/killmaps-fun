@@ -124,6 +124,7 @@ function publicConfig() {
     maxPlayers: MAX_PLAYERS,
     currency: "SOL",
     rewardMode: REWARD_MODE,
+    creatorSelfFarmBypass: REWARD_MODE === "testing", // creator can test on own map in testing
     rewardPerKill: REWARD.PER_KILL, // SOL
     settlementIntervalMs: REWARD.SETTLEMENT_MS,
     dailyCreatorCap: REWARD.DAILY_CAP, // SOL
@@ -465,6 +466,9 @@ app.get("/api/rewards/debug", async (_req, res) => {
     tokenCA: solanaConfig.tokenCA,
     cluster: SOLANA_CLUSTER,
 
+    // Bypass flags active in the current mode (true = check is OFF for testing).
+    creatorSelfFarmBypass: REWARD_MODE === "testing",
+    sameIpCheckBypass: REWARD_MODE === "testing",
     antifarmThresholds: {
       spawnProtectionMs: ANTIFARM.SPAWN_PROTECTION_MS,
       minMatchMs: ANTIFARM.MIN_MATCH_MS,
@@ -473,6 +477,10 @@ app.get("/api/rewards/debug", async (_req, res) => {
       minKillerDistance: ANTIFARM.MIN_KILLER_DISTANCE,
       creatorMinUniquePlayers: ANTIFARM.CREATOR_MIN_UNIQUE_PLAYERS,
       creatorMinVerifiedKills: ANTIFARM.CREATOR_MIN_VERIFIED_KILLS,
+      creatorSelfFarmCheck: REWARD_MODE === "launch" ? "enabled" : "bypassed (testing)",
+      sameIpDeviceCheck: REWARD_MODE === "launch" ? "enabled" : "bypassed (testing)",
+      sameWalletCheck: "enabled (always)",
+      npcKillsPay: "0 SOL (always)",
     },
   });
 });
@@ -589,6 +597,7 @@ init()
       console.log(`[db] storage backend: ${mode}${mode === "file" ? " (ephemeral — set DATABASE_URL for persistence)" : " (persistent)"}`);
       console.log(`[rewards] mode=${REWARD_MODE} · settlement every ${Math.round(REWARD.SETTLEMENT_MS / 1000)}s · ${REWARD.PER_KILL} SOL/validated kill · daily cap ${REWARD.DAILY_CAP} SOL`);
       console.log(`[rewards] anti-farm: minMatch=${ANTIFARM.MIN_MATCH_MS}ms pairCooldown=${ANTIFARM.PAIR_COOLDOWN_MS}ms unlock=${ANTIFARM.CREATOR_MIN_UNIQUE_PLAYERS}players/${ANTIFARM.CREATOR_MIN_VERIFIED_KILLS}kills`);
+      if (REWARD_MODE === "testing") console.log(`[rewards] TESTING bypasses: creator-self-farm OFF, same-IP/device OFF (same-wallet + NPC=0 SOL still enforced; token verification + mainnet ON)`);
       logStartup();
       setInterval(() => runSettlement("scheduler"), REWARD.SETTLEMENT_MS);
       schedulerRunning = true;

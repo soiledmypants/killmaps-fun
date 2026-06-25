@@ -150,6 +150,7 @@ export interface PublicConfig {
   maxPlayers?: number;
   currency?: string;
   rewardMode?: string;
+  creatorSelfFarmBypass?: boolean;
   rewardPerKill?: number;
   settlementIntervalMs?: number;
   dailyCreatorCap?: number;
