@@ -1,7 +1,7 @@
 import http from "http";
 import express from "express";
 import cors from "cors";
-import { read, write, init, flush } from "./db.js";
+import { read, write, init, flush, writeStatus } from "./db.js";
 import { ANTIFARM, REWARD_MODE, uid, fakeTxHash } from "./antifarm.js";
 import { recordValidatedKill, rewardsView, settle, treasuryStats, REWARD } from "./rewards.js";
 import { initRealtime, getRoomCounts } from "./realtime.js";
@@ -20,6 +20,7 @@ app.set("trust proxy", true); // so req.ip reflects the real client behind Rende
 
 const MAX_PLAYERS = Number(process.env.MAX_PLAYERS || 16);
 const VERIFY_CACHE_MS = Number(process.env.VERIFY_CACHE_MS) || 5 * 60 * 1000;
+const ADMIN_SECRET = (process.env.ADMIN_SECRET || "").trim(); // protects /api/admin/*
 
 const SOLANA_CLUSTER = process.env.SOLANA_CLUSTER || "mainnet-beta";
 const SOLSCAN_CLUSTER = process.env.SOLSCAN_CLUSTER || (SOLANA_CLUSTER === "mainnet-beta" ? "mainnet" : SOLANA_CLUSTER);
@@ -201,9 +202,13 @@ app.post("/api/players/register", async (req, res) => {
   player.updated_at = now;
   db.players[wallet] = player;
 
-  await verifyPlayer(db, player); // best-effort verification on register
   await write(db);
   res.json(player);
+  // Best-effort verification in the BACKGROUND — never block (or fail) registration on
+  // the RPC. The client also calls /api/players/verify explicitly.
+  if (!existing || !player.verified) {
+    verifyPlayer(db, player).then(() => write(db)).catch((e) => console.warn("[verify] background register-verify failed:", e.message));
+  }
 });
 
 app.post("/api/players/verify", async (req, res) => {
@@ -405,16 +410,30 @@ app.get("/api/rewards/debug", async (_req, res) => {
   const uniquePlayers = new Set();
   for (const L of Object.values(db.ledger)) for (const w of L.unique_players || []) uniquePlayers.add(w);
   const treasuryBalance = await getSolBalance(solanaConfig.treasuryPublicKey);
+  const rewardsWalletBalance = await getSolBalance(solanaConfig.rewardsPublicKey);
+  const lastPayoutTx = db.transactions.find((t) => t.type === "settlement" || t.type === "settlement_failed") || null;
+  const dbg = db.debug || {};
+  const sw = settlementState();
 
   res.json({
     rewardMode: REWARD_MODE,
     currency: "SOL",
     rewardPerKill: REWARD.PER_KILL,
     settlementIntervalMs: REWARD.SETTLEMENT_MS,
+
+    // last kill snapshots (exact pipeline visibility)
+    lastPvpKill: dbg.lastPvpKill || null,
+    lastNpcKill: dbg.lastNpcKill || null,
+    lastAcceptedReward: dbg.lastAccepted || null,
+    lastRejectedReward: dbg.lastRejected || null,
+    lastRejectionReason: dbg.lastRejectionReason || null,
+
+    // ledger
     pendingByCreator: Object.values(db.ledger).map((L) => ({
       wallet: L.wallet, pending: L.pending, lifetime_settled: L.lifetime_settled, last_settlement: L.last_settlement || 0,
       validated_kills: L.validated_kills, unique_players_today: (L.unique_players || []).length, flagged: !!L.flagged,
     })),
+    pendingLedgerEntries: Object.values(db.ledger).filter((L) => L.pending > 0).map((L) => ({ wallet: L.wallet, pending: L.pending })),
     validatedKills: counted.length,
     rejectedKills: rejected.length,
     rejectionReasons,
@@ -423,16 +442,29 @@ app.get("/api/rewards/debug", async (_req, res) => {
       killer: k.killer, victim: k.victim || "(npc/unregistered)", creator: k.creator,
       counted: k.counted, weapon: k.weapon, head: k.head, reasons: k.reasons, score: k.score, timestamp: k.timestamp,
     })),
+
+    // settlement
     nextSettlementMs: Math.max(0, (db.settlement?.next || 0) - Date.now()),
     lastSettlementAttempt: db.settlement?.last_attempt || null,
     lastSettlementCount: db.settlement?.settled_count ?? null,
+    lastPayoutTransaction: lastPayoutTx,
+    lastTransactionSignature: db.settlement?.last_signature || null,
     lastPayoutError: db.settlement?.last_error || null,
     failedPayouts: db.transactions.filter((t) => t.type === "settlement_failed").slice(0, 25),
+    settlementWorkerRunning: sw.workerRunning,
+    schedulerRunning: sw.schedulerRunning,
+
+    // infra
+    dbWrite: writeStatus(), // { ok, at, error, backend }
     treasuryWallet: solanaConfig.treasuryPublicKey,
-    treasuryBalance, // on-chain SOL or null
+    treasuryBalance, // on-chain SOL or null (MOCK)
+    rewardsWalletBalance, // on-chain SOL of the dev/admin wallet or null
     onchain: solanaConfig.treasuryLive,
     verifyLive: solanaConfig.verifyLive,
     devVerifyOff: solanaConfig.disableTokenVerification,
+    tokenCA: solanaConfig.tokenCA,
+    cluster: SOLANA_CLUSTER,
+
     antifarmThresholds: {
       spawnProtectionMs: ANTIFARM.SPAWN_PROTECTION_MS,
       minMatchMs: ANTIFARM.MIN_MATCH_MS,
@@ -442,6 +474,44 @@ app.get("/api/rewards/debug", async (_req, res) => {
       creatorMinUniquePlayers: ANTIFARM.CREATOR_MIN_UNIQUE_PLAYERS,
       creatorMinVerifiedKills: ANTIFARM.CREATOR_MIN_VERIFIED_KILLS,
     },
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Admin: force an immediate settlement (testing). Protected by ADMIN_SECRET
+// (Authorization: Bearer <ADMIN_SECRET>). Disabled if ADMIN_SECRET is unset.
+// ---------------------------------------------------------------------------
+function adminAuthorized(req) {
+  if (!ADMIN_SECRET) return false; // disabled until a secret is configured
+  const auth = (req.headers.authorization || "").trim();
+  const bearer = auth.startsWith("Bearer ") ? auth.slice(7).trim() : "";
+  const headerKey = (req.headers["x-admin-secret"] || "").toString().trim();
+  return bearer === ADMIN_SECRET || headerKey === ADMIN_SECRET;
+}
+
+app.post("/api/admin/force-settlement", async (req, res) => {
+  if (!ADMIN_SECRET) return res.status(403).json({ success: false, error: "force-settlement disabled: set ADMIN_SECRET on the server" });
+  if (!adminAuthorized(req)) return res.status(401).json({ success: false, error: "unauthorized: provide Authorization: Bearer <ADMIN_SECRET>" });
+
+  const before = treasuryStats(read()).pending;
+  console.log(`[Reward] FORCE SETTLEMENT requested (admin) — pending before: ${before} SOL`);
+  const r = await runSettlement("force-admin");
+  const db = read();
+  const after = treasuryStats(db).pending;
+  res.json({
+    success: !r.error && (r.results || []).every((x) => x.ok !== false) ,
+    rewardMode: REWARD_MODE,
+    creatorsProcessed: r.settled || 0,
+    amountPaid: r.paid || 0,
+    currency: "SOL",
+    results: r.results || [],
+    lastTxSignature: r.lastSignature || db.settlement?.last_signature || null,
+    payoutErrors: (r.results || []).filter((x) => x.ok === false).map((x) => ({ wallet: x.wallet, amount: x.amount, error: x.error })),
+    treasuryWallet: solanaConfig.treasuryPublicKey,
+    onchain: solanaConfig.treasuryLive,
+    pendingBefore: before,
+    pendingAfter: after,
+    error: r.error || null,
   });
 });
 
@@ -482,17 +552,26 @@ app.use((err, req, res, next) => {
 // move pending -> settled (paying on-chain in LIVE mode). The ledger is the source
 // of truth; this is the only place rewards leave the ledger.
 // ---------------------------------------------------------------------------
-let settling = false;
-async function runSettlement() {
-  if (settling) return;
+let settling = false; // worker currently running
+let schedulerRunning = false; // 5-min scheduler active
+export function settlementState() {
+  return { workerRunning: settling, schedulerRunning };
+}
+async function runSettlement(trigger = "scheduler") {
+  if (settling) {
+    console.log(`[Reward] Settlement skipped (${trigger}) — worker already running`);
+    return { settled: 0, paid: 0, results: [], skipped: true };
+  }
   settling = true;
   try {
+    console.log(`[Reward] Settlement scheduler tick (${trigger})`);
     const db = read();
-    const n = await settle(db, (args) => tx(db, args));
+    const r = await settle(db, (args) => tx(db, args));
     await write(db);
-    if (n > 0) console.log(`[settlement] settled ${n} creator ledger(s)`);
+    return r;
   } catch (e) {
-    console.error("[settlement] error:", e.message);
+    console.error("[Reward] Settlement error:", e.message);
+    return { settled: 0, paid: 0, results: [], error: e.message };
   } finally {
     settling = false;
   }
@@ -511,7 +590,9 @@ init()
       console.log(`[rewards] mode=${REWARD_MODE} · settlement every ${Math.round(REWARD.SETTLEMENT_MS / 1000)}s · ${REWARD.PER_KILL} SOL/validated kill · daily cap ${REWARD.DAILY_CAP} SOL`);
       console.log(`[rewards] anti-farm: minMatch=${ANTIFARM.MIN_MATCH_MS}ms pairCooldown=${ANTIFARM.PAIR_COOLDOWN_MS}ms unlock=${ANTIFARM.CREATOR_MIN_UNIQUE_PLAYERS}players/${ANTIFARM.CREATOR_MIN_VERIFIED_KILLS}kills`);
       logStartup();
-      setInterval(runSettlement, REWARD.SETTLEMENT_MS);
+      setInterval(() => runSettlement("scheduler"), REWARD.SETTLEMENT_MS);
+      schedulerRunning = true;
+      console.log(`[Reward] Settlement scheduler running (every ${Math.round(REWARD.SETTLEMENT_MS / 1000)}s)`);
     });
   })
   .catch((e) => {

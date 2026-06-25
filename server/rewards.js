@@ -6,7 +6,7 @@
 // validates and moves pending -> settled (and pays on-chain in LIVE mode). Direct
 // per-kill payouts are never used. All activity is server-validated and anti-farmed.
 // ---------------------------------------------------------------------------
-import { evaluateKill, uid } from "./antifarm.js";
+import { evaluateKill, uid, REWARD_MODE } from "./antifarm.js";
 import { sendPayout, isValidPublicKey } from "./solana.js";
 
 // All reward values are denominated, stored, and paid in SOL (no USD, no conversion).
@@ -86,8 +86,13 @@ export function recordValidatedKill(db, ctx) {
     now,
   });
 
-  // Extra PvP-only / alt-farm guards beyond evaluateKill.
-  if (killerIp && victimIp && killerIp === victimIp) verdict.reasons.push("same network/device");
+  // Extra alt-farm guard: reject kills where killer & victim share an IP/device.
+  // ONLY in launch mode — in testing mode two wallets on the same network (same
+  // house / Wi-Fi) must be able to validate rewards. Same-WALLET and creator-self-farm
+  // are still blocked in BOTH modes (handled in evaluateKill).
+  if (REWARD_MODE === "launch" && killerIp && victimIp && killerIp === victimIp) {
+    verdict.reasons.push("same network/device");
+  }
   const counted = verdict.reasons.length === 0;
 
   const kill = {
@@ -118,14 +123,30 @@ export function recordValidatedKill(db, ctx) {
     if (db.flags.length > 5000) db.flags.splice(0, db.flags.length - 5000);
   }
 
-  // Readable per-kill server log for reward debugging.
+  // ---- reward-pipeline debug snapshot + staged logs ----
   const matchMs = match ? now - match.started_at : null;
-  console.log(
-    `[kill] killer=${kill.killer || "?"} victim=${kill.victim || "(npc/unregistered)"} creator=${kill.creator || "?"} ` +
-    `counted=${counted} credited=${credited} SOL` +
-    (counted ? "" : ` reasons=[${kill.reasons.join(", ")}]`) +
-    ` matchMs=${matchMs} sameWallet=${kill.killer && kill.killer === kill.victim} sameIp=${!!(killerIp && victimIp && killerIp === victimIp)} score=${verdict.score}`
-  );
+  const isPvp = !!(killer && victim); // both sides are registered players
+  const summary = {
+    killer: kill.killer || null, victim: kill.victim || "(npc/unregistered)", creator: kill.creator || null,
+    weapon: kill.weapon, head: kill.head, isPvp, counted, credited, reasons: kill.reasons, score: verdict.score, matchMs,
+    sameWallet: !!(kill.killer && kill.killer === kill.victim),
+    sameIp: !!(killerIp && victimIp && killerIp === victimIp),
+    killerRegistered: !!killer, victimRegistered: !!victim,
+    killerVerified: !!(killer && killer.verified), victimVerified: !!(victim && victim.verified),
+    killerBalance: killer?.token_balance ?? null, victimBalance: victim?.token_balance ?? null,
+    timestamp: now,
+  };
+  db.debug = db.debug || {};
+  if (isPvp) db.debug.lastPvpKill = summary; else db.debug.lastNpcKill = summary;
+  if (counted) db.debug.lastAccepted = summary;
+  else { db.debug.lastRejected = summary; db.debug.lastRejectionReason = kill.reasons.join(", "); }
+
+  console.log(`[Reward] Kill received: killer=${summary.killer || "?"} victim=${summary.victim} creator=${summary.creator || "?"} weapon=${kill.weapon} head=${kill.head} pvp=${isPvp} matchMs=${matchMs}`);
+  if (counted) {
+    console.log(`[Reward] Kill validation PASSED — ledger +${credited} SOL credited to creator ${kill.creator} (pending now ${getLedger(db, kill.creator).pending} SOL, validated_kills ${getLedger(db, kill.creator).validated_kills})`);
+  } else {
+    console.log(`[Reward] Kill validation FAILED: ${kill.reasons.join(", ") || "(no reason?)"} | killerVerified=${summary.killerVerified} victimVerified=${summary.victimVerified} sameWallet=${summary.sameWallet} sameIp=${summary.sameIp} matchMs=${matchMs} score=${verdict.score}`);
+  }
 
   return { counted, reasons: kill.reasons, score: verdict.score, kill, credited };
 }
@@ -140,37 +161,53 @@ export function recordValidatedKill(db, ctx) {
 export async function settle(db, recordTx) {
   const attemptAt = Date.now();
   let settled = 0;
+  let paid = 0;
   let lastError = null;
-  for (const L of Object.values(db.ledger)) {
-    if (L.flagged || !(L.pending > 0)) continue;
-    if (!isValidPublicKey(L.wallet)) continue;
+  let lastSignature = null;
+  let lastPayout = null;
+  const results = [];
+  const candidates = Object.values(db.ledger).filter((L) => !L.flagged && L.pending > 0 && isValidPublicKey(L.wallet));
+  console.log(`[Reward] Settlement worker started — ${candidates.length} creator(s) with pending rewards`);
+
+  for (const L of candidates) {
     const amount = round(L.pending); // SOL
+    console.log(`[Reward] Sending ${amount} SOL from treasury to creator ${L.wallet}`);
     let tx;
     try {
       // source "treasury" -> signed by TREASURY_WALLET_PRIVATE_KEY
       tx = await recordTx({ type: "settlement", wallet: L.wallet, amount, source: "treasury", meta: { kind: "creator", paid_by: "treasury" } });
     } catch (e) {
-      // on-chain settlement failed — KEEP pending (retry next cycle) and surface it.
       lastError = e.message;
-      console.error(`[settlement] PAYOUT FAILED for ${L.wallet} (${amount} SOL): ${e.message}`);
+      console.error(`[Reward] Settlement failed for ${L.wallet} (${amount} SOL): ${e.message}`);
       db.transactions.unshift({
         id: uid("tx"), type: "settlement_failed", wallet: L.wallet, amount, points: null,
         status: "failed", onchain: false, timestamp: Date.now(), tx_hash: null, error: e.message, paid_by: "treasury",
       });
-      continue;
+      results.push({ wallet: L.wallet, amount, ok: false, error: e.message });
+      continue; // KEEP pending — retried next cycle
     }
     L.settled = round(L.settled + amount);
     L.lifetime_settled = round(L.lifetime_settled + amount);
     L.last_settlement = amount;
     L.pending = 0;
     settled += 1;
-    // Treasury accounting (transparency): draw down balance, track lifetime paid.
+    paid = round(paid + amount);
     db.treasury.balance = round((db.treasury.balance || 0) - amount);
     db.treasury.total_paid = round((db.treasury.total_paid || 0) + amount);
-    void tx;
+    lastSignature = tx.tx_hash || null;
+    lastPayout = tx;
+    if (tx.onchain) console.log(`[Reward] Transaction signature: ${tx.tx_hash}`);
+    else console.log(`[Reward] Recorded settlement (MOCK — no on-chain transfer; set TREASURY_WALLET_PRIVATE_KEY + SOLANA_RPC_URL for live payouts)`);
+    console.log(`[Reward] Transaction ${tx.onchain ? "confirmed" : "recorded"} — ${amount} SOL to ${L.wallet}`);
+    results.push({ wallet: L.wallet, amount, ok: true, onchain: tx.onchain, signature: tx.tx_hash });
   }
-  db.settlement = { last: attemptAt, last_attempt: attemptAt, last_error: lastError, settled_count: settled, next: Date.now() + REWARD.SETTLEMENT_MS };
-  return settled;
+
+  db.settlement = {
+    last: attemptAt, last_attempt: attemptAt, last_error: lastError, settled_count: settled,
+    last_signature: lastSignature, last_payout: lastPayout, next: Date.now() + REWARD.SETTLEMENT_MS,
+  };
+  console.log(`[Reward] Settlement complete — settled=${settled} paid=${paid} SOL${lastError ? ` lastError="${lastError}"` : ""}`);
+  return { settled, paid, results, lastError, lastSignature };
 }
 
 /** Global treasury transparency figures (all SOL). */

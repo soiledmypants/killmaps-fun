@@ -55,3 +55,7 @@ services:
       # Netlify frontend URL(s), comma-separated, for CORS.
       - key: FRONTEND_URL
         sync: false
+      # Protects POST /api/admin/force-settlement (Authorization: Bearer <secret>).
+      # Set a long random value. If unset, the admin endpoint is disabled (403).
+      - key: ADMIN_SECRET
+        sync: false

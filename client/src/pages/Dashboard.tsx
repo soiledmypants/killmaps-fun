@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";
-import { api } from "../lib/api";
+import { api, ApiError } from "../lib/api";
 import { usePlayer } from "../lib/player";
 import type { GameMap, RewardsView } from "../lib/types";
 import { fmtSol, shortWallet } from "../lib/config";
@@ -8,10 +8,12 @@ import { MapThumb } from "../components/MapThumb";
 import { Coins, Wrench, Play, Target } from "../components/icons";
 
 export default function Dashboard() {
-  const { wallet } = usePlayer();
+  const { wallet, config } = usePlayer();
   const [maps, setMaps] = useState<GameMap[]>([]);
   const [rewards, setRewards] = useState<RewardsView | null>(null);
   const [treasury, setTreasury] = useState<{ treasuryBalance: number | null; pendingRewards: number; totalPaid: number; treasuryWallet: string | null } | null>(null);
+  const [forceMsg, setForceMsg] = useState<string | null>(null);
+  const [forcing, setForcing] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const baseNext = useRef(0);
   const fetchedAt = useRef(0);
@@ -38,6 +40,30 @@ export default function Dashboard() {
     }, 1000);
     return () => clearInterval(t);
   }, [refresh]);
+
+  const forceSettlement = async () => {
+    const stored = localStorage.getItem("pumpstrike.adminSecret") || "";
+    const secret = stored || window.prompt("Enter ADMIN_SECRET to force settlement:") || "";
+    if (!secret) return;
+    localStorage.setItem("pumpstrike.adminSecret", secret);
+    setForcing(true);
+    setForceMsg(null);
+    try {
+      const r = await api.forceSettlement(secret);
+      const errs = (r.payoutErrors || []).map((e: any) => e.error).join("; ");
+      setForceMsg(
+        `Settled ${r.creatorsProcessed} creator(s) · paid ${r.amountPaid} SOL · pending ${r.pendingBefore}→${r.pendingAfter} SOL` +
+        (r.lastTxSignature ? ` · tx ${String(r.lastTxSignature).slice(0, 10)}…` : r.onchain ? "" : " · (MOCK: no on-chain transfer — set treasury key + RPC)") +
+        (errs ? ` · errors: ${errs}` : "")
+      );
+      refresh();
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 401) localStorage.removeItem("pumpstrike.adminSecret");
+      setForceMsg(e instanceof ApiError ? `Force settlement failed: ${e.message}` : "Force settlement failed");
+    } finally {
+      setForcing(false);
+    }
+  };
 
   if (!wallet)
     return (
@@ -85,6 +111,19 @@ export default function Dashboard() {
           <div><div className="label">Pending Rewards</div><div className="font-mono text-2xl text-accent mt-1">{fmtSol(treasury?.pendingRewards)}</div></div>
           <div><div className="label">Total Paid Out</div><div className="font-mono text-2xl text-verify mt-1">{fmtSol(treasury?.totalPaid)}</div></div>
         </div>
+
+        {config?.rewardMode === "testing" && (
+          <div className="mt-4 pt-4 border-t border-base-500">
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="chip border-accent/40 bg-accent/10 text-accent">Testing mode</span>
+              <button className="btn btn-accent h-9 px-4" disabled={forcing} onClick={forceSettlement}>
+                {forcing ? "Settling…" : "Force Settlement Now"}
+              </button>
+              <span className="text-[11px] text-steel">Pays all pending creator rewards immediately from the Treasury. Requires ADMIN_SECRET.</span>
+            </div>
+            {forceMsg && <div className="mt-2 text-xs font-mono text-steel break-words">{forceMsg}</div>}
+          </div>
+        )}
       </div>
 
       {rewards?.flagged && <div className="panel p-3 text-kill text-sm mb-6">This account is flagged for review — settlements are paused.</div>}

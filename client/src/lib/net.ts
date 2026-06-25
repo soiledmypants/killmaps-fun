@@ -31,7 +31,7 @@ export function getPickups() {
 export interface NetHandlers {
   onShoot?: (d: { id: string; weapon: string; origin: number[]; dir: number[] }) => void;
   onReload?: (d: { id: string; weapon: string }) => void;
-  onKilled?: (d: { killer: { id: string; name: string }; victim: { id: string; name: string }; head: boolean; weapon: string; counted: boolean; reason: string | null }) => void;
+  onKilled?: (d: { killer: { id: string; name: string }; victim: { id: string; name: string }; head: boolean; weapon: string; counted: boolean; credited?: number; reason: string | null; reasons?: string[] }) => void;
   onHealth?: (d: { id: string; hp: number }) => void;
   onRespawn?: (d: { id: string; x: number; y: number; z: number }) => void;
 }

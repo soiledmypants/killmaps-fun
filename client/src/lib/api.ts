@@ -104,6 +104,11 @@ export const api = {
 
   // ---- rewards (read-only — the ledger settles automatically every 5 min) ----
   rewards: (wallet: string): Promise<RewardsView> => request(`/rewards/${wallet}`),
+  rewardsDebug: (): Promise<any> => request(`/rewards/debug`),
+
+  // ---- admin (testing): force an immediate settlement; needs the ADMIN_SECRET ----
+  forceSettlement: (secret: string): Promise<any> =>
+    request(`/admin/force-settlement`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${secret}` }, body: "{}" }),
 
   // ---- live room counts ----
   rooms: (): Promise<{ counts: Record<string, number>; maxPlayers: number }> => request("/rooms"),

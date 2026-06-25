@@ -149,6 +149,7 @@ export interface PublicConfig {
   devVerifyOff: boolean;
   maxPlayers?: number;
   currency?: string;
+  rewardMode?: string;
   rewardPerKill?: number;
   settlementIntervalMs?: number;
   dailyCreatorCap?: number;

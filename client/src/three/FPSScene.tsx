@@ -185,7 +185,12 @@ function Arena({ map, cbs }: { map: GameMap; cbs: Cbs }) {
         g.pushFeed({ killer: d.killer.name, victim: d.victim.name, weapon: d.weapon, head: d.head, self: d.victim.id === net.selfId() });
         sound.kill();
         if (d.head) sound.hit(true);
-        if (d.killer.id === net.selfId() && d.victim.id !== net.selfId()) g.set({ kills: g.kills + 1, score: g.score + (d.head ? 150 : 100) });
+        if (d.killer.id === net.selfId() && d.victim.id !== net.selfId()) {
+          g.set({ kills: g.kills + 1, score: g.score + (d.head ? 150 : 100) });
+          // show whether this kill credited the creator reward, and if not, exactly why
+          if (d.counted) g.set({ notice: `Reward kill — creator +${d.credited ?? 0.005} SOL`, noticeAt: performance.now(), lastKillInfo: "Verified kill counted" });
+          else g.set({ notice: `Kill not rewarded: ${d.reason || "rejected"}`, noticeAt: performance.now(), lastKillInfo: `Not counted: ${d.reason || "rejected"}` });
+        }
         if (d.victim.id === net.selfId()) {
           player.current.alive = false;
           player.current.respawnAt = performance.now() + 2200;

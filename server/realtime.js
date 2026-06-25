@@ -79,8 +79,9 @@ export function initRealtime(httpServer, allowedOrigins) {
         loadout: data.loadout || { primary: "m4", secondary: "glock", armor: "none" },
         map_id: data.map_id, ip, hp: 100, alive: true, moving: false, aiming: false,
         x: spawn.x, y: spawn.y, z: spawn.z, yaw: spawn.yaw, pitch: 0,
-        joinedAt: Date.now(), lastX: spawn.x, lastZ: spawn.z,
+        joinedAt: Date.now(), spawnedAt: Date.now(), lastX: spawn.x, lastZ: spawn.z,
       };
+      console.log(`[Reward] Player joined match ${data.map_id}: wallet=${wallet || "(none)"} registered=${!!db.players[wallet]} verified=${!!db.players[wallet]?.verified}`);
       room.players.set(socket.id, player);
       socket.data = { mapId: data.map_id, wallet };
       socket.join(data.map_id);
@@ -154,17 +155,19 @@ export function initRealtime(httpServer, allowedOrigins) {
         const match = db.matches[room.matchId];
         const killerP = db.players[shooter.wallet] || null;
         const victimP = db.players[target.wallet] || null;
+        console.log(`[Reward] PvP kill event on map ${socket.data.mapId}: killer=${shooter.wallet || "(no wallet)"} victim=${target.wallet || "(no wallet)"} killerRegistered=${!!killerP} victimRegistered=${!!victimP}`);
         const result = recordValidatedKill(db, {
           map, match, killer: killerP, victim: victimP, weapon: h.weapon, head: !!h.head,
           killerIp: shooter.ip, victimIp: target.ip,
           fire_rate: 8, accuracy: 0.4, killer_distance: match?.movement?.[shooter.wallet] || 0,
-          time_since_spawn_ms: Date.now() - (target.joinedAt || 0),
+          // spawn protection uses the VICTIM's time since their last spawn
+          time_since_spawn_ms: Date.now() - (target.spawnedAt || target.joinedAt || 0),
         });
         if (match) match.kills += 1;
-        write(db);
+        write(db); // persist kill + ledger to Neon (write status tracked in db.js)
         io.to(socket.data.mapId).emit("killed", {
           killer: { id: shooter.id, name: shooter.username }, victim: { id: target.id, name: target.username },
-          head: !!h.head, weapon: h.weapon, counted: result.counted, reason: result.reasons[0] || null,
+          head: !!h.head, weapon: h.weapon, counted: result.counted, credited: result.credited, reason: result.reasons[0] || null, reasons: result.reasons,
         });
       }
     });
@@ -173,7 +176,7 @@ export function initRealtime(httpServer, allowedOrigins) {
       const room = rooms.get(socket.data?.mapId);
       const p = room?.players.get(socket.id);
       if (!p) return;
-      p.alive = true; p.hp = 100;
+      p.alive = true; p.hp = 100; p.spawnedAt = Date.now();
       if (typeof r.x === "number") { p.x = r.x; p.y = r.y; p.z = r.z; p.yaw = r.yaw; p.lastX = r.x; p.lastZ = r.z; }
       io.to(socket.data.mapId).emit("player_respawn", { id: socket.id, x: p.x, y: p.y, z: p.z, hp: 100 });
     });

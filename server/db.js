@@ -34,6 +34,8 @@ const DEFAULT_DB = {
   flags: [],
   // Reward Ledger Settlement schedule (timestamps in ms).
   settlement: { last: 0, next: 0 },
+  // Reward-pipeline debug snapshots (last PvP/NPC/accepted/rejected kill).
+  debug: {},
   // Treasury wallet is the source of ALL creator reward settlements. total_paid =
   // lifetime SOL paid to creators (transparency). rewards kept for back-compat (unused).
   treasury: { balance: 0, rewards: 0, total_paid: 0 },
@@ -115,7 +117,14 @@ export function read() {
   if (!cache.settlement) cache.settlement = { last: 0, next: 0 };
   if (!cache.treasury) cache.treasury = { balance: 0, rewards: 0, total_paid: 0 };
   if (typeof cache.treasury.total_paid !== "number") cache.treasury.total_paid = 0;
+  if (!cache.debug) cache.debug = {}; // reward-pipeline debug snapshots
   return cache;
+}
+
+// Tracks the result of the most recent persist (for the reward debug endpoint).
+let lastWrite = { ok: null, at: 0, error: null, backend: null };
+export function writeStatus() {
+  return { ...lastWrite, backend: backend?.name || null };
 }
 
 /**
@@ -127,7 +136,9 @@ export async function write(db) {
   cache = db;
   try {
     await backend.persist(db);
+    lastWrite = { ok: true, at: Date.now(), error: null, backend: backend?.name };
   } catch (e) {
+    lastWrite = { ok: false, at: Date.now(), error: e.message, backend: backend?.name };
     console.error("[db] persist failed (will retry on next write/flush):", e.message);
   }
 }
