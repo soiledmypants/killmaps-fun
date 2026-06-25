@@ -55,7 +55,7 @@ export function Nav({ overlay = false }: { overlay?: boolean }) {
 
           <div className="ml-auto flex items-center gap-2">
             {SOCIALS.twitter && (
-              <a href={SOCIALS.twitter} target="_blank" rel="noreferrer" title="@PumpStrike_Fun on X" className="w-8 h-8 flex items-center justify-center border border-base-400 bg-base-700/80 text-steel hover:text-white hover:bg-base-600 transition-colors">
+              <a href={SOCIALS.twitter} target="_blank" rel="noreferrer" title="@CounterStrikePF on X" className="w-8 h-8 flex items-center justify-center border border-base-400 bg-base-700/80 text-steel hover:text-white hover:bg-base-600 transition-colors">
                 <X size={15} />
               </a>
             )}
