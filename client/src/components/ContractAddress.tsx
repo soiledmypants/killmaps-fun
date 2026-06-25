@@ -2,7 +2,7 @@ import { useState } from "react";
 import { TOKEN_CA, SOCIALS } from "../lib/config";
 import { Copy, Check, Globe } from "./icons";
 
-// Displays the PumpStrike token contract address with a one-click copy button.
+// Displays the COUNTERSTRIKE token contract address with a one-click copy button.
 // Reads TOKEN_CA from config (env-overridable) so it always matches /api/config.
 export function ContractAddress({ className = "" }: { className?: string }) {
   const [copied, setCopied] = useState(false);

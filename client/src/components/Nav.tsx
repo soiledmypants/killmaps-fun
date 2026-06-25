@@ -32,7 +32,7 @@ export function Nav({ overlay = false }: { overlay?: boolean }) {
           <Link to="/" className="flex items-center gap-2 shrink-0">
             <Target size={20} className="text-accent" />
             <span className="font-bold tracking-tight text-white">
-              Pump<span className="text-accent">Strike</span>
+              COUNTER<span className="text-accent">STRIKE</span>
             </span>
           </Link>
 

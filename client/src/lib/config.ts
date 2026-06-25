@@ -2,7 +2,7 @@
 // truth for token verification + reward economics. No Boss.fun defaults are baked in
 // — KillMaps must never inherit another project's token CA or wallets.
 
-// PumpStrike pump.fun token (mainnet). Override with VITE_TOKEN_CA if needed.
+// COUNTERSTRIKE pump.fun token (mainnet). Override with VITE_TOKEN_CA if needed.
 export const TOKEN_CA =
   (import.meta.env.VITE_TOKEN_CA as string | undefined)?.trim() || "8Ac6NUTzfk5FoC2VZ7fYkqFgZ6kBcKa9aaexAoAwpump";
 
@@ -13,7 +13,7 @@ export const SOCIALS = {
   twitter: (import.meta.env.VITE_TWITTER_URL as string | undefined)?.trim() || "https://x.com/CounterStrikePF",
 };
 
-export const BRAND = "PumpStrike";
+export const BRAND = "COUNTERSTRIKE";
 
 export const MIN_TOKENS_DISPLAY = 250000;
 

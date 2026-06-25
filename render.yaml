@@ -52,7 +52,8 @@ services:
         sync: false
       - key: CREATOR_REWARDS_PUBLIC_KEY
         sync: false
-      # Netlify frontend URL(s), comma-separated, for CORS.
+      # Frontend origin(s), comma-separated, for CORS — the custom domain
+      # (e.g. https://counterstrikepf.fun) and/or the Netlify URL.
       - key: FRONTEND_URL
         sync: false
       # Protects POST /api/admin/force-settlement (Authorization: Bearer <secret>).

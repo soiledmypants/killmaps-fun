@@ -65,7 +65,7 @@ export default function Profile() {
           {player?.verified ? (
             <>You are a <span className="text-verify font-semibold">verified player</span>. Your kills against other verified players generate rewards.</>
           ) : (
-            <>Hold at least <span className="text-accent font-mono">{(config?.minTokens ?? 250000).toLocaleString()}</span> of the PumpStrike token in your payout wallet to become verified on Solana mainnet.</>
+            <>Hold at least <span className="text-accent font-mono">{(config?.minTokens ?? 250000).toLocaleString()}</span> of the COUNTERSTRIKE token in your payout wallet to become verified on Solana mainnet.</>
           )}
         </p>
       </div>

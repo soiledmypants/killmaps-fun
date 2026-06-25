@@ -42,7 +42,7 @@ function envOrigins() {
     .filter(Boolean);
 }
 const ALLOWED_ORIGINS = new Set(
-  [...DEV_ORIGINS, "https://killmaps.netlify.app", ...envOrigins()].filter(Boolean).map(normOrigin)
+  [...DEV_ORIGINS, "https://counterstrikepf.fun", ...envOrigins()].filter(Boolean).map(normOrigin)
 );
 app.use(
   cors({

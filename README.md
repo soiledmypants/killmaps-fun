@@ -14,6 +14,7 @@ the treasury. Anti-farming is enforced from day one.
 
 - Token (CA): `8Ac6NUTzfk5FoC2VZ7fYkqFgZ6kBcKa9aaexAoAwpump`
 - Verification: hold ≥ 250,000 of the token (real on-chain SPL balance check on mainnet-beta).
+- Live site: https://counterstrikepf.fun
 - X / Twitter: https://x.com/CounterStrikePF
 
 ## Stack

@@ -126,7 +126,7 @@ export default function CreateMap() {
       <div className="h-12 shrink-0 border-b border-base-500 bg-base-800 flex items-center gap-2 px-3">
         <Link to="/" className="flex items-center gap-2 mr-2">
           <Target size={18} className="text-accent" />
-          <span className="font-bold text-sm hidden sm:block">KillMaps<span className="text-accent">.fun</span></span>
+          <span className="font-bold text-sm hidden sm:block">COUNTER<span className="text-accent">STRIKE</span></span>
         </Link>
         <input
           className="bg-transparent border-0 text-sm font-semibold text-white focus:outline-none w-44 sm:w-56 border-b border-transparent focus:border-accent/50"
@@ -225,7 +225,7 @@ export default function CreateMap() {
 function GateBar() {
   return (
     <div className="h-12 border-b border-base-500 bg-base-800 flex items-center px-4">
-      <Link to="/" className="flex items-center gap-2"><Target size={18} className="text-accent" /><span className="font-bold text-sm text-white">KillMaps<span className="text-accent">.fun</span></span></Link>
+      <Link to="/" className="flex items-center gap-2"><Target size={18} className="text-accent" /><span className="font-bold text-sm text-white">COUNTER<span className="text-accent">STRIKE</span></span></Link>
     </div>
   );
 }
