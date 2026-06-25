@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { LobbyScene } from "../three/LobbyScene";
 import { Nav } from "../components/Nav";
 import { IdentityModal, VerifyBadge } from "../components/IdentityModal";
+import { ContractAddress } from "../components/ContractAddress";
 import { MapThumb } from "../components/MapThumb";
 import { usePlayer } from "../lib/player";
 import { api } from "../lib/api";
@@ -114,6 +115,7 @@ export default function Home() {
             <Wrench size={18} /> Create Map
           </Link>
         </div>
+        <ContractAddress className="mt-5 w-[min(92vw,30rem)] pointer-events-auto" />
       </div>
 
       {/* BOTTOM PLAYER CARD */}

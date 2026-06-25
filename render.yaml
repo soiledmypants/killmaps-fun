@@ -39,7 +39,7 @@ services:
         sync: false
       # The pump.fun token contract address players must hold to be verified.
       - key: TOKEN_CA
-        value: C3RxH72uCos4VT2VZ6Y4LgthHy9k4uSwQGxiyxDBpump
+        value: 8Ac6NUTzfk5FoC2VZ7fYkqFgZ6kBcKa9aaexAoAwpump
       # Treasury wallet — signs ALL creator reward settlements (and player payouts).
       # This is the ONLY wallet that pays creator rewards.
       - key: TREASURY_WALLET_PRIVATE_KEY

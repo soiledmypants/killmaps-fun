@@ -4,7 +4,7 @@
 
 // PumpStrike pump.fun token (mainnet). Override with VITE_TOKEN_CA if needed.
 export const TOKEN_CA =
-  (import.meta.env.VITE_TOKEN_CA as string | undefined)?.trim() || "C3RxH72uCos4VT2VZ6Y4LgthHy9k4uSwQGxiyxDBpump";
+  (import.meta.env.VITE_TOKEN_CA as string | undefined)?.trim() || "8Ac6NUTzfk5FoC2VZ7fYkqFgZ6kBcKa9aaexAoAwpump";
 
 export const SOCIALS = {
   pumpfun:
