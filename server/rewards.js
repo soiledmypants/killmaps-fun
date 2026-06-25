@@ -13,7 +13,7 @@ import { sendPayout, isValidPublicKey } from "./solana.js";
 // Creator rewards are paid from the TREASURY wallet (see settle() -> source "treasury").
 export const CURRENCY = "SOL";
 export const REWARD = {
-  PER_KILL: Number(process.env.REWARD_PER_KILL || 0.005), // SOL per validated real-player kill (NPC kills = 0)
+  PER_KILL: Number(process.env.REWARD_PER_KILL || 0.0025), // SOL per validated real-player kill (NPC kills = 0)
   PER_UNIQUE: Number(process.env.REWARD_PER_UNIQUE || 0), // off by default — reward is per validated kill
   PER_MINUTE: Number(process.env.REWARD_PER_MINUTE || 0), // off by default
   DAILY_CAP: Number(process.env.DAILY_CREATOR_CAP || 5), // SOL pending / day / creator
