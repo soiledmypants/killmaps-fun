@@ -6,12 +6,12 @@ import { MIN_TOKENS } from "./solana.js";
 // REWARD_MODE selects the anti-farm threshold profile. "testing" relaxes the strict
 // launch thresholds so rewards are easy to earn while testing — anti-farm stays ON
 // (different wallets, no self-farm, cooldowns, movement, IP/device checks all remain).
-// Default is "testing" until explicitly switched to "launch".
-export const REWARD_MODE = (process.env.REWARD_MODE || "testing").toLowerCase() === "launch" ? "launch" : "testing";
+// Default is "launch" (strict). Set REWARD_MODE=testing to relax for testing.
+export const REWARD_MODE = (process.env.REWARD_MODE || "launch").toLowerCase() === "testing" ? "testing" : "launch";
 
 const PROFILES = {
   testing: { SPAWN_PROTECTION_MS: 2000, MIN_MATCH_MS: 10000, PAIR_COOLDOWN_MS: 10000, PAIR_DAILY_CAP: 20, MIN_KILLER_DISTANCE: 10, CREATOR_MIN_UNIQUE_PLAYERS: 1, CREATOR_MIN_VERIFIED_KILLS: 1 },
-  launch: { SPAWN_PROTECTION_MS: 3000, MIN_MATCH_MS: 60000, PAIR_COOLDOWN_MS: 60000, PAIR_DAILY_CAP: 10, MIN_KILLER_DISTANCE: 40, CREATOR_MIN_UNIQUE_PLAYERS: 50, CREATOR_MIN_VERIFIED_KILLS: 250 },
+  launch: { SPAWN_PROTECTION_MS: 3000, MIN_MATCH_MS: 60000, PAIR_COOLDOWN_MS: 60000, PAIR_DAILY_CAP: 10, MIN_KILLER_DISTANCE: 40, CREATOR_MIN_UNIQUE_PLAYERS: 3, CREATOR_MIN_VERIFIED_KILLS: 3 },
 };
 const P = PROFILES[REWARD_MODE];
 // An explicit env var wins; otherwise the mode profile value is used.

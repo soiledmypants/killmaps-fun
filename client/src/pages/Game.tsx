@@ -161,6 +161,7 @@ export default function Game() {
             <span className="font-bold text-white text-sm truncate max-w-[160px]">{map.title}</span>
             {test && <span className="chip border-accent/50 text-accent">Test</span>}
             <PlayerCount mapId={map.map_id} />
+            <RewardEligibility />
           </div>
           <div className="panel px-5 py-1.5 font-mono text-2xl text-white tabular-nums">
             {String(Math.floor(game.timeLeft / 60)).padStart(2, "0")}:{String(game.timeLeft % 60).padStart(2, "0")}
@@ -252,6 +253,28 @@ function PlayerCount({ mapId }: { mapId: string }) {
   const max = useNet((s) => s.maxPlayers);
   const active = counts[mapId] || 0;
   return <span className="chip border-base-500 text-steel font-mono">{active} / {max}</span>;
+}
+
+// Reward eligibility countdown — kills only count after the match has been active for
+// MIN_MATCH_MS (60s in launch mode). Prevents the "round too short" confusion.
+function RewardEligibility() {
+  const startedAt = useNet((s) => s.matchStartedAt);
+  const minMs = usePlayer((s) => s.config?.antifarm?.minMatchMs) ?? 60000;
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
+  if (!startedAt) return null;
+  const remaining = Math.max(0, minMs - (now - startedAt));
+  const secs = Math.ceil(remaining / 1000);
+  if (remaining > 0)
+    return (
+      <span className="chip border-accent/40 bg-accent/10 text-accent font-mono" title={`Kills only count after the match has been active for ${Math.round(minMs / 1000)} seconds.`}>
+        Reward eligible in {secs}s
+      </span>
+    );
+  return <span className="chip border-verify/50 bg-verify/10 text-verify">Reward eligible</span>;
 }
 
 function Overlay({ children }: { children: React.ReactNode }) {

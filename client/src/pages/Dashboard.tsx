@@ -84,7 +84,7 @@ export default function Dashboard() {
       <h1 className="text-2xl font-bold text-white flex items-center gap-2 mb-1">
         <Coins size={22} className="text-accent" /> Creator Reward Ledger
       </h1>
-      <p className="text-steel text-sm mb-6">Creator earnings accrue in <span className="text-accent">SOL</span> from validated real-player kills (NPC kills pay 0). The ledger settles automatically every 5 minutes — never per kill — and is <span className="text-white">paid by the Treasury wallet</span>. Reward per validated kill: <span className="font-mono text-white">{fmtSol(rewards?.reward_per_kill)}</span>.</p>
+      <p className="text-steel text-sm mb-6"><span className="text-white">Validated PvP kills on your map earn creator rewards</span> in <span className="text-accent">SOL</span> (NPC kills pay 0). The ledger settles automatically every 5 minutes — never per kill — <span className="text-white">paid by the Treasury wallet</span>. Reward per validated kill: <span className="font-mono text-white">{fmtSol(rewards?.reward_per_kill)}</span>.</p>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         <Big label="Pending SOL Rewards" value={fmtSol(rewards?.pending)} accent big />

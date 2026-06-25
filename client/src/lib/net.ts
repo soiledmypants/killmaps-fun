@@ -42,8 +42,9 @@ interface NetState {
   ids: string[];
   counts: Record<string, number>;
   maxPlayers: number;
+  matchStartedAt: number; // ms epoch, for reward-eligibility countdown
 }
-export const useNet = create<NetState>(() => ({ connected: false, selfId: null, ids: [], counts: {}, maxPlayers: 16 }));
+export const useNet = create<NetState>(() => ({ connected: false, selfId: null, ids: [], counts: {}, maxPlayers: 16, matchStartedAt: 0 }));
 
 let socket: Socket | null = null;
 let handlers: NetHandlers = {};
@@ -64,12 +65,12 @@ export function connect(mapId: string, identity: { wallet: string; username: str
   socket.on("disconnect", () => useNet.setState({ connected: false }));
   socket.on("join_error", (e) => console.warn("[net] join error:", e?.error));
 
-  socket.on("snapshot", (d: { players: RemotePlayer[]; max: number; pickups?: Record<string, number> }) => {
+  socket.on("snapshot", (d: { players: RemotePlayer[]; max: number; pickups?: Record<string, number>; matchStartedAt?: number }) => {
     remote.clear();
     for (const p of d.players) remote.set(p.id, p);
     pickups.clear();
     if (d.pickups) for (const [k, v] of Object.entries(d.pickups)) pickups.set(k, v);
-    useNet.setState({ maxPlayers: d.max || 16 });
+    useNet.setState({ maxPlayers: d.max || 16, matchStartedAt: d.matchStartedAt || Date.now() });
     syncRoster();
   });
   socket.on("pickup_taken", (d: { objId: string; until: number }) => pickups.set(d.objId, d.until));

@@ -95,6 +95,7 @@ export function initRealtime(httpServer, allowedOrigins) {
         map_id: data.map_id, self: { id: socket.id, spawn },
         players: [...room.players.values()].filter((p) => p.id !== socket.id).map(publicPlayer),
         max: MAX_PLAYERS, pickups: activePickups(room),
+        matchStartedAt: db.matches[room.matchId]?.started_at || Date.now(), // for reward-eligibility countdown
       });
       socket.to(data.map_id).emit("player_join", publicPlayer(player));
       io.to(data.map_id).emit("counts", { map_id: data.map_id, active: room.players.size, max: MAX_PLAYERS });
