@@ -6,6 +6,10 @@
 export const TOKEN_CA =
   (import.meta.env.VITE_TOKEN_CA as string | undefined)?.trim() || "8Ac6NUTzfk5FoC2VZ7fYkqFgZ6kBcKa9aaexAoAwpump";
 
+// Pre-launch the UI shows "SOON" instead of the contract address / pump.fun link.
+// Set VITE_TOKEN_LIVE=true at launch to reveal the CA.
+export const TOKEN_LIVE = (import.meta.env.VITE_TOKEN_LIVE as string | undefined)?.trim() === "true";
+
 export const SOCIALS = {
   pumpfun:
     (import.meta.env.VITE_PUMPFUN_URL as string | undefined)?.trim() ||

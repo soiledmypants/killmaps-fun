@@ -1,12 +1,24 @@
 import { useState } from "react";
-import { TOKEN_CA, SOCIALS } from "../lib/config";
+import { TOKEN_CA, TOKEN_LIVE, SOCIALS } from "../lib/config";
 import { Copy, Check, Globe } from "./icons";
 
 // Displays the COUNTERSTRIKE token contract address with a one-click copy button.
 // Reads TOKEN_CA from config (env-overridable) so it always matches /api/config.
+// Pre-launch (TOKEN_LIVE false) it shows a "SOON" placeholder instead of the CA.
 export function ContractAddress({ className = "" }: { className?: string }) {
   const [copied, setCopied] = useState(false);
-  if (!TOKEN_CA) return null;
+
+  // Token not live yet — hide the CA, copy button and pump.fun link; show "SOON".
+  if (!TOKEN_LIVE || !TOKEN_CA) {
+    return (
+      <div className={`panel p-3 bg-base-800/85 backdrop-blur ${className}`}>
+        <div className="flex items-center justify-between">
+          <span className="label">Contract Address</span>
+          <span className="chip border-accent/40 bg-accent/10 text-accent font-bold tracking-[0.3em]">SOON</span>
+        </div>
+      </div>
+    );
+  }
 
   const copy = async () => {
     try {
