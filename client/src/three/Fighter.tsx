@@ -1,4 +1,4 @@
-import { useMemo, useRef, MutableRefObject } from "react";
+import { useMemo, useRef, MutableRefObject, ReactNode } from "react";
 import { useFrame, GroupProps } from "@react-three/fiber";
 import * as THREE from "three";
 import { WeaponModel } from "./WeaponModel";
@@ -49,12 +49,26 @@ function mat(color: string, rough = 0.85, metal = 0.1) {
   return <meshStandardMaterial color={color} roughness={rough} metalness={metal} />;
 }
 
+// Where the weapon sits in the operator's hands. Shared by the in-game body and the
+// loadout preview so an injected (animated) weapon lines up exactly with the default.
+const WEAPON_POS: [number, number, number] = [0.02, -0.4, 0.34];
+const WEAPON_ROT: [number, number, number] = [0.05, Math.PI / 2, -0.12];
+const WEAPON_SCALE = 0.92;
+
 export function Fighter({
   palette = PALETTES.operator,
   weapon = "m4",
   stateRef,
+  weaponNode,
   ...props
-}: GroupProps & { palette?: Palette; weapon?: WeaponId | null; stateRef?: MutableRefObject<FighterState> }) {
+}: GroupProps & {
+  palette?: Palette;
+  weapon?: WeaponId | null;
+  stateRef?: MutableRefObject<FighterState>;
+  // Optional override for the held weapon (e.g. an animated swap in the loadout
+  // preview). Rendered at the same hand transform as the default WeaponModel.
+  weaponNode?: ReactNode;
+}) {
   const internal = useRef<FighterState>(makeFighterState());
   const st = stateRef || internal;
   const p = palette;
@@ -187,7 +201,11 @@ export function Fighter({
                 </mesh>
               </group>
             ))}
-            {weapon && <WeaponModel weaponId={weapon} position={[0.02, -0.4, 0.34]} rotation={[0.05, Math.PI / 2, -0.12]} scale={0.92} />}
+            {weaponNode ? (
+              <group position={WEAPON_POS} rotation={WEAPON_ROT} scale={WEAPON_SCALE}>{weaponNode}</group>
+            ) : weapon ? (
+              <WeaponModel weaponId={weapon} position={WEAPON_POS} rotation={WEAPON_ROT} scale={WEAPON_SCALE} />
+            ) : null}
           </group>
 
           {/* neck + head */}
