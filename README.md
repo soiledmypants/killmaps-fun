@@ -12,8 +12,8 @@ the treasury. Anti-farming is enforced from day one.
 
 **Solana mainnet-beta.**
 
-- Token (CA): `8Ac6NUTzfk5FoC2VZ7fYkqFgZ6kBcKa9aaexAoAwpump`
-- Verification: hold ≥ 250,000 of the token (real on-chain SPL balance check on mainnet-beta).
+- Token: **$CS** — CA `8Ac6NUTzfk5FoC2VZ7fYkqFgZ6kBcKa9aaexAoAwpump`
+- Verification: hold ≥ 250,000 **$CS** (real on-chain SPL balance check on mainnet-beta).
 - Live site: https://counterstrikepf.fun
 - X / Twitter: https://x.com/CounterStrikePF
 
@@ -38,8 +38,8 @@ you can build, publish, and play; token verification reports "unverified" and pa
 recorded but not sent on-chain — so the full UX is testable offline.
 
 ## The loop
-1. **Identity** — enter a username + Solana payout wallet (no wallet connect). Holding the
-   configured token (≥ 250,000) makes you a **verified** player whose kills generate rewards.
+1. **Identity** — enter a username + Solana payout wallet (no wallet connect). Holding
+   ≥ 250,000 **$CS** makes you a **verified** player whose kills generate rewards.
 2. **Build** — `/create` is a tactical map editor: walls, floors, ramps, stairs, platforms,
    cover, crates, barrels, fences, doors, windows, spawns/team spawns, weapon/ammo/health
    pickups and lights. Move/rotate/scale gizmos, snap-to-grid, undo/redo, duplicate, delete.

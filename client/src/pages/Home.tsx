@@ -7,7 +7,7 @@ import { ContractAddress } from "../components/ContractAddress";
 import { MapThumb } from "../components/MapThumb";
 import { usePlayer } from "../lib/player";
 import { api } from "../lib/api";
-import { shortWallet, fmtSol } from "../lib/config";
+import { shortWallet, fmtSol, TICKER_TAG } from "../lib/config";
 import type { GameMap } from "../lib/types";
 import { Target, Wrench, Coins, Globe, Play, Shield, User } from "../components/icons";
 
@@ -100,7 +100,7 @@ export default function Home() {
 
       {/* CENTER COPY + CTA */}
       <div className="absolute inset-x-0 bottom-32 flex flex-col items-center text-center px-4 pointer-events-none">
-        <div className="chip border-accent/40 bg-accent/10 text-accent mb-4 pointer-events-auto">Tactical FPS map platform · Solana mainnet</div>
+        <div className="chip border-accent/40 bg-accent/10 text-accent mb-4 pointer-events-auto">{TICKER_TAG} · Tactical FPS map platform · Solana mainnet</div>
         <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight text-white leading-[1.05] drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)]">
           Build tactical maps.<br />Earn from <span className="text-accent">verified kills</span>.
         </h1>

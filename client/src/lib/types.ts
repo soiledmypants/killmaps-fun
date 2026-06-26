@@ -145,6 +145,7 @@ export interface PublicConfig {
   solscanCluster: string;
   tokenCA: string | null;
   minTokens: number;
+  ticker?: string;
   verifyLive: boolean;
   devVerifyOff: boolean;
   maxPlayers?: number;

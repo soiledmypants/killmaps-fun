@@ -19,6 +19,11 @@ export const SOCIALS = {
 
 export const BRAND = "COUNTERSTRIKE";
 
+// Token ticker / symbol shown in the UI, e.g. "Hold 250,000 $CS". Env-overridable so it
+// always matches the backend's TOKEN_TICKER (exposed via /api/config.ticker).
+export const TICKER = (import.meta.env.VITE_TOKEN_TICKER as string | undefined)?.trim() || "CS";
+export const TICKER_TAG = `$${TICKER}`; // e.g. "$CS"
+
 export const MIN_TOKENS_DISPLAY = 250000;
 
 /** Format a SOL amount for display, e.g. 0.0025 SOL. 4 dp so small per-kill rewards

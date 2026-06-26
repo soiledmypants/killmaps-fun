@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { TOKEN_CA, TOKEN_LIVE, SOCIALS } from "../lib/config";
+import { TOKEN_CA, TOKEN_LIVE, TICKER_TAG, SOCIALS } from "../lib/config";
 import { Copy, Check, Globe } from "./icons";
 
 // Displays the COUNTERSTRIKE token contract address with a one-click copy button.
@@ -13,7 +13,7 @@ export function ContractAddress({ className = "" }: { className?: string }) {
     return (
       <div className={`panel p-3 bg-base-800/85 backdrop-blur ${className}`}>
         <div className="flex items-center justify-between">
-          <span className="label">Contract Address</span>
+          <span className="label"><span className="text-accent font-bold">{TICKER_TAG}</span> Contract Address</span>
           <span className="chip border-accent/40 bg-accent/10 text-accent font-bold tracking-[0.3em]">SOON</span>
         </div>
       </div>
@@ -39,7 +39,7 @@ export function ContractAddress({ className = "" }: { className?: string }) {
   return (
     <div className={`panel p-3 bg-base-800/85 backdrop-blur ${className}`}>
       <div className="flex items-center justify-between mb-1.5">
-        <span className="label">Contract Address</span>
+        <span className="label"><span className="text-accent font-bold">{TICKER_TAG}</span> Contract Address</span>
         {SOCIALS.pumpfun && (
           <a href={SOCIALS.pumpfun} target="_blank" rel="noreferrer" className="text-[10px] uppercase tracking-wider text-steel hover:text-accent flex items-center gap-1">
             <Globe size={11} /> pump.fun

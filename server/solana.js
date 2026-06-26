@@ -25,6 +25,8 @@ import bs58 from "bs58";
 const RPC_URL = process.env.SOLANA_RPC_URL || "";
 const TOKEN_CA = (process.env.TOKEN_CA || "").trim();
 const MIN_TOKENS = Number(process.env.MIN_TOKENS || 250000);
+// Display ticker/symbol for the token, surfaced to the client via /api/config.
+const TOKEN_TICKER = (process.env.TOKEN_TICKER || "CS").trim();
 
 // DEV-ONLY bypass. When DISABLE_TOKEN_VERIFICATION=true the real verification code
 // below is skipped: every wallet is treated as a verified holder so the full app can
@@ -162,6 +164,7 @@ export const solanaConfig = {
   rewardsPublicKey: CREATOR_REWARDS_PUBLIC_KEY,
   tokenCA: TOKEN_CA || null,
   minTokens: MIN_TOKENS,
+  ticker: TOKEN_TICKER,
   verifyLive: !!(connection && TOKEN_CA),
   disableTokenVerification: DISABLE_TOKEN_VERIFICATION,
 };

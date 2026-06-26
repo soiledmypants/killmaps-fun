@@ -4,7 +4,7 @@ import { usePlayer } from "../lib/player";
 import { api } from "../lib/api";
 import type { RewardsView } from "../lib/types";
 import { IdentityModal, VerifyBadge } from "../components/IdentityModal";
-import { shortWallet, fmtSol } from "../lib/config";
+import { shortWallet, fmtSol, TICKER_TAG } from "../lib/config";
 import { User, Shield } from "../components/icons";
 
 export default function Profile() {
@@ -52,7 +52,7 @@ export default function Profile() {
           <Stat label="Kills" value={player?.stats.kills ?? 0} />
           <Stat label="Deaths" value={player?.stats.deaths ?? 0} />
           <Stat label="Maps made" value={player?.stats.maps_created ?? 0} />
-          <Stat label="Token balance" value={player?.token_balance ?? 0} />
+          <Stat label={`${TICKER_TAG} balance`} value={player?.token_balance ?? 0} />
         </div>
       </div>
 
@@ -65,7 +65,7 @@ export default function Profile() {
           {player?.verified ? (
             <>You are a <span className="text-verify font-semibold">verified player</span>. Your kills against other verified players generate rewards.</>
           ) : (
-            <>Hold at least <span className="text-accent font-mono">{(config?.minTokens ?? 250000).toLocaleString()}</span> of the COUNTERSTRIKE token in your payout wallet to become verified on Solana mainnet.</>
+            <>Hold at least <span className="text-accent font-mono">{(config?.minTokens ?? 250000).toLocaleString()}</span> <span className="text-accent font-semibold">{TICKER_TAG}</span> in your payout wallet to become verified on Solana mainnet.</>
           )}
         </p>
       </div>

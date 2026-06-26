@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { NavLink, Link } from "react-router-dom";
 import { usePlayer } from "../lib/player";
-import { SOCIALS } from "../lib/config";
+import { SOCIALS, TICKER_TAG } from "../lib/config";
 import { IdentityModal, VerifyBadge } from "./IdentityModal";
 import { Target, Wrench, Shield, Globe, Coins, Receipt, User, X } from "./icons";
 
@@ -34,6 +34,7 @@ export function Nav({ overlay = false }: { overlay?: boolean }) {
             <span className="font-bold tracking-tight text-white">
               COUNTER<span className="text-accent">STRIKE</span>
             </span>
+            <span className="hidden sm:inline-block text-[10px] font-bold text-accent border border-accent/40 bg-accent/10 px-1.5 py-0.5 leading-none">{TICKER_TAG}</span>
           </Link>
 
           <nav className="hidden md:flex items-center gap-1 flex-1">

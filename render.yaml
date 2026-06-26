@@ -22,6 +22,9 @@ services:
       # Minimum token holding required for a player to be "verified".
       - key: MIN_TOKENS
         value: "250000"
+      # Token ticker/symbol surfaced in the UI (e.g. "$CS").
+      - key: TOKEN_TICKER
+        value: "CS"
       # Production MUST keep real token verification on. (DEV-only bypass flag.)
       - key: DISABLE_TOKEN_VERIFICATION
         value: "false"

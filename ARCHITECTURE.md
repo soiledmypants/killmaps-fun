@@ -102,7 +102,7 @@ Verified players fight
 ```
 
 A kill counts only if **all** hold: killer verified, victim verified, both hold
-≥ 250,000 tokens, killer ≠ victim, match legitimate + long enough, map published and not
+≥ 250,000 $CS, killer ≠ victim, match legitimate + long enough, map published and not
 in test mode, not instant-after-spawn, pair not farming, creator not farming own map,
 backend accepts the match.
 

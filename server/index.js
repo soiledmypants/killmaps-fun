@@ -115,6 +115,7 @@ function publicConfig() {
     solscanCluster: SOLSCAN_CLUSTER,
     tokenCA: solanaConfig.tokenCA,
     minTokens: MIN_TOKENS,
+    ticker: solanaConfig.ticker,
     verifyLive: solanaConfig.verifyLive,
     devVerifyOff: solanaConfig.disableTokenVerification,
     onchain: solanaConfig.treasuryLive,

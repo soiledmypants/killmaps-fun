@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { usePlayer } from "../lib/player";
+import { TICKER_TAG } from "../lib/config";
 import { Shield, Check, X } from "./icons";
 
 export function VerifyBadge({ player }: { player: { verified: boolean; verify_mock?: boolean } | null }) {
@@ -11,7 +12,7 @@ export function VerifyBadge({ player }: { player: { verified: boolean; verify_mo
       </span>
     );
   return (
-    <span className="chip border-base-400 bg-base-600 text-steel" title="Hold the required tokens to verify.">
+    <span className="chip border-base-400 bg-base-600 text-steel" title={`Hold the required ${TICKER_TAG} to verify.`}>
       Unverified
     </span>
   );
@@ -42,8 +43,8 @@ export function IdentityModal({ onClose }: { onClose: () => void }) {
 
         <p className="text-sm text-steel mb-5 leading-relaxed">
           Enter a username and your Solana <span className="text-white">payout wallet</span>. No wallet
-          connect — your address is used to verify token holdings and to receive reward payouts.
-          Hold at least <span className="text-accent font-mono">{minTokens.toLocaleString()}</span> tokens to
+          connect — your address is used to verify {TICKER_TAG} holdings and to receive reward payouts.
+          Hold at least <span className="text-accent font-mono">{minTokens.toLocaleString()}</span> <span className="text-accent font-semibold">{TICKER_TAG}</span> to
           become a verified player whose kills generate rewards.
         </p>
 
@@ -70,7 +71,7 @@ export function IdentityModal({ onClose }: { onClose: () => void }) {
           <div className="mt-4 pt-4 border-t border-base-500 flex items-center justify-between text-sm">
             <div className="flex items-center gap-2">
               <VerifyBadge player={player} />
-              <span className="text-steel font-mono">{player.token_balance?.toLocaleString() ?? 0} tokens</span>
+              <span className="text-steel font-mono">{player.token_balance?.toLocaleString() ?? 0} {TICKER_TAG}</span>
             </div>
             <button className="text-steel hover:text-kill text-xs uppercase tracking-wider" onClick={() => { signOut(); onClose(); }}>
               Sign out
