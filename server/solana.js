@@ -23,7 +23,9 @@ import {
 import bs58 from "bs58";
 
 const RPC_URL = process.env.SOLANA_RPC_URL || "";
-const TOKEN_CA = (process.env.TOKEN_CA || "").trim();
+// Official COUNTERSTRIKE ($CS) mint. Overridable via the TOKEN_CA env (Render sets it),
+// but defaulted here so /api/config + verification use the right CA even if env is unset.
+const TOKEN_CA = (process.env.TOKEN_CA || "CcFNaWiZ27pfaFrvW85apjg18nSf51VENCHFRuMfpump").trim();
 const MIN_TOKENS = Number(process.env.MIN_TOKENS || 250000);
 // Display ticker/symbol for the token, surfaced to the client via /api/config.
 const TOKEN_TICKER = (process.env.TOKEN_TICKER || "CS").trim();

@@ -6,9 +6,9 @@
 export const TOKEN_CA =
   (import.meta.env.VITE_TOKEN_CA as string | undefined)?.trim() || "CcFNaWiZ27pfaFrvW85apjg18nSf51VENCHFRuMfpump";
 
-// Pre-launch the UI shows "SOON" instead of the contract address / pump.fun link.
-// Set VITE_TOKEN_LIVE=true at launch to reveal the CA.
-export const TOKEN_LIVE = (import.meta.env.VITE_TOKEN_LIVE as string | undefined)?.trim() === "true";
+// The CA + pump.fun link are shown by default. Set VITE_TOKEN_LIVE=false to hide them
+// and show a "SOON" placeholder instead (pre-launch).
+export const TOKEN_LIVE = (import.meta.env.VITE_TOKEN_LIVE as string | undefined)?.trim().toLowerCase() !== "false";
 
 export const SOCIALS = {
   pumpfun:
