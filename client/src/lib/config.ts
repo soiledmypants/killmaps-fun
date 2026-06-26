@@ -4,7 +4,7 @@
 
 // COUNTERSTRIKE pump.fun token (mainnet). Override with VITE_TOKEN_CA if needed.
 export const TOKEN_CA =
-  (import.meta.env.VITE_TOKEN_CA as string | undefined)?.trim() || "8Ac6NUTzfk5FoC2VZ7fYkqFgZ6kBcKa9aaexAoAwpump";
+  (import.meta.env.VITE_TOKEN_CA as string | undefined)?.trim() || "CcFNaWiZ27pfaFrvW85apjg18nSf51VENCHFRuMfpump";
 
 // Pre-launch the UI shows "SOON" instead of the contract address / pump.fun link.
 // Set VITE_TOKEN_LIVE=true at launch to reveal the CA.

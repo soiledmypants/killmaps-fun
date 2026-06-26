@@ -12,7 +12,7 @@ the treasury. Anti-farming is enforced from day one.
 
 **Solana mainnet-beta.**
 
-- Token: **$CS** — CA `8Ac6NUTzfk5FoC2VZ7fYkqFgZ6kBcKa9aaexAoAwpump`
+- Token: **$CS** — CA `CcFNaWiZ27pfaFrvW85apjg18nSf51VENCHFRuMfpump`
 - Verification: hold ≥ 250,000 **$CS** (real on-chain SPL balance check on mainnet-beta).
 - Live site: https://counterstrikepf.fun
 - X / Twitter: https://x.com/CounterStrikePF
@@ -76,7 +76,7 @@ GET /api/transactions · GET /api/leaderboard · GET /api/treasury`
 | --- | --- |
 | `DATABASE_URL` | Neon/managed Postgres (Render disk is ephemeral) |
 | `SOLANA_RPC_URL` | paid mainnet RPC (Helius/QuickNode/Triton) — required for verification + payouts |
-| `TOKEN_CA` | the pump.fun token mint players must hold (`8Ac6NUTzfk5FoC2VZ7fYkqFgZ6kBcKa9aaexAoAwpump`) |
+| `TOKEN_CA` | the pump.fun token mint players must hold (`CcFNaWiZ27pfaFrvW85apjg18nSf51VENCHFRuMfpump`) |
 | `MIN_TOKENS` | verification threshold (default 250000) |
 | `TREASURY_WALLET_PRIVATE_KEY` | funds player payouts |
 | `CREATOR_REWARDS_WALLET_PRIVATE_KEY` | funds creator reward claims |
