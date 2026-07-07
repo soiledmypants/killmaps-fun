@@ -4,7 +4,7 @@
 
 // BULLSTRIKE pump.fun token ($BS, mainnet). Override with VITE_TOKEN_CA if needed.
 export const TOKEN_CA =
-  (import.meta.env.VITE_TOKEN_CA as string | undefined)?.trim() || "6XhuxmoBDgJTPQUjoxWSdsAQuoqBbGW7x3yeipcrpump";
+  (import.meta.env.VITE_TOKEN_CA as string | undefined)?.trim() || "G4d2c6XKcN5RnbiCwudfGRaKpCBVVV3skKiEjkQDpump";
 
 // The CA + pump.fun link are shown by default. Set VITE_TOKEN_LIVE=false to hide them
 // and show a "SOON" placeholder instead (pre-launch).
