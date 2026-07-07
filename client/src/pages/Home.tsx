@@ -31,17 +31,25 @@ export default function Home() {
   const playersTracked = maps.reduce((a, m) => a + m.stats.unique_verified_players, 0);
 
   return (
-    <div className="relative h-screen w-screen overflow-hidden bg-base-900">
-      {/* 3D lobby background */}
+    <div className="bg-base-900">
+      {/* HERO — full viewport, 3D lobby scene as the whole background */}
+      <section className="relative min-h-screen w-full overflow-hidden">
       <div className="absolute inset-0">
         <LobbyScene />
       </div>
-      {/* readability gradients */}
-      <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-base-900 via-base-900/10 to-base-900/40" />
+      {/* dark gradient from the bottom: scene stays visible up top, text reads below */}
+      <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-base-900 via-base-900/35 to-transparent" />
       <div className="absolute inset-y-0 left-0 w-[34rem] pointer-events-none bg-gradient-to-r from-base-900/85 to-transparent hidden lg:block" />
       <div className="absolute inset-y-0 right-0 w-[30rem] pointer-events-none bg-gradient-to-l from-base-900/85 to-transparent hidden lg:block" />
 
       <Nav overlay />
+
+      {/* top-center badge */}
+      <div className="absolute top-16 inset-x-0 flex justify-center pointer-events-none">
+        <span className="chip border-accent/40 bg-accent/10 text-accent animate-pulse pointer-events-auto">
+          {TICKER_TAG} · Bulls vs Bears · Solana mainnet
+        </span>
+      </div>
 
       {/* LEFT PANEL */}
       <aside className="absolute left-4 top-20 bottom-28 w-72 hidden lg:flex flex-col gap-3 overflow-y-auto scroll-thin pr-1">
@@ -100,9 +108,8 @@ export default function Home() {
         </Panel>
       </aside>
 
-      {/* CENTER COPY + CTA */}
+      {/* CENTER COPY + CTA — stacked over the scene, readable on the bottom gradient */}
       <div className="absolute inset-x-0 bottom-32 flex flex-col items-center text-center px-4 pointer-events-none">
-        <div className="chip border-accent/40 bg-accent/10 text-accent mb-4 pointer-events-auto">{TICKER_TAG} · Bulls vs Bears · Solana mainnet</div>
         <h1 className="text-2xl md:text-4xl text-white leading-[1.15] drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)]">
           BUILD MAPS. <span className="text-accent">CHOOSE YOUR SIDE.</span><br />EARN FROM VERIFIED KILLS.
         </h1>
@@ -110,10 +117,13 @@ export default function Home() {
           Bulls vs Bears — tactical combat in the forest. Verified {TICKER_TAG} holders fight on player-built maps. Creators earn from real kills.
         </p>
         <div className="mt-6 flex flex-wrap gap-3 justify-center pointer-events-auto">
-          <Link to="/play" className="btn btn-accent px-8 py-3.5 text-base shadow-[0_0_30px_-8px_rgba(212,160,23,0.6)]">
-            <Target size={18} /> ENTER THE FOREST
+          <Link
+            to="/play"
+            className="btn btn-accent px-10 py-4 text-lg shadow-[0_0_30px_-8px_rgba(212,160,23,0.6)] transition-shadow hover:shadow-[0_0_44px_-4px_rgba(212,160,23,0.85)]"
+          >
+            <Target size={20} /> ENTER THE FOREST
           </Link>
-          <Link to="/create" className="btn px-8 py-3.5 text-base bg-base-700/80">
+          <Link to="/create" className="btn px-8 py-4 text-base bg-base-700/80">
             <Wrench size={18} /> Create Map
           </Link>
         </div>
@@ -159,8 +169,32 @@ export default function Home() {
           )}
         </div>
       </div>
+      </section>
+
+      {/* HOW IT WORKS — below the hero fold */}
+      <section className="mx-auto max-w-6xl px-4 py-16">
+        <div className="text-center mb-10">
+          <div className="label mb-2">The loop</div>
+          <h2 className="text-2xl md:text-3xl text-accent">HOW IT WORKS</h2>
+        </div>
+        <div className="grid sm:grid-cols-3 gap-4">
+          <HowCard icon="🗺️" title="BUILD" body="Design tactical forest maps with the in-browser editor." />
+          <HowCard icon="⚔️" title="FIGHT" body="Choose bull or bear. Drop into real-time PvP on community maps." />
+          <HowCard icon="💰" title="EARN" body={`Map creators earn ${TICKER_TAG} rewards from every verified kill on their battlefield.`} />
+        </div>
+      </section>
 
       {modal && <IdentityModal onClose={() => setModal(false)} />}
+    </div>
+  );
+}
+
+function HowCard({ icon, title, body }: { icon: string; title: string; body: string }) {
+  return (
+    <div className="panel p-6 text-center">
+      <div className="text-4xl mb-3">{icon}</div>
+      <h3 className="text-lg text-accent mb-2">{title}</h3>
+      <p className="text-steel text-sm leading-relaxed">{body}</p>
     </div>
   );
 }

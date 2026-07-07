@@ -4,9 +4,10 @@ import * as THREE from "three";
 import { WeaponModel } from "./WeaponModel";
 import type { WeaponId } from "../lib/fps";
 
-// One original jointed humanoid (no ripped models). Limbs are parented at real
-// joints so nothing floats. Drives idle-breathe, walk, aim and a death topple from a
-// shared mutable state ref so enemies animate without per-frame React renders.
+// One original jointed animal fighter (no ripped models) — a bull or bear in
+// tactical gear. Limbs are parented at real joints so nothing floats. Drives
+// idle-breathe, walk, aim and a death topple from a shared mutable state ref so
+// enemies animate without per-frame React renders.
 
 export interface FighterState {
   moving: boolean;
@@ -20,23 +21,30 @@ export function makeFighterState(phase = 0): FighterState {
 }
 
 export interface Palette {
-  fatigue: string;
+  species: "bull" | "bear";
+  fatigue: string; // body / hide color (arms, legs, torso under the vest)
   fatigueDark: string;
   vest: string;
   accent: string;
   helmet: string;
-  mask: string;
+  mask: string; // bear balaclava / bull face shading
   glove: string;
+  snout: string; // muzzle color
   headwrap?: boolean;
 }
 
-// Woodland camo kits. "desert" key kept as a legacy id (now a scout/khaki variant).
+const HORN = "#B8A582"; // bone
+const HORN_BASE = "#4A3320"; // dark brown horn base
+
+// Animals in combat gear: the operator is a BULL in an olive tactical vest; every
+// enemy variant is a BEAR in tactical gear + balaclava. "desert" key kept as a
+// legacy id (now a scout-kit bear).
 export const PALETTES: Record<string, Palette> = {
-  operator: { fatigue: "#5C6B48", fatigueDark: "#47543A", vest: "#22281E", accent: "#2D5A27", helmet: "#4A5A3C", mask: "#161A12", glove: "#12150F" },
-  desert: { fatigue: "#8A8560", fatigueDark: "#6E6A48", vest: "#3A3A28", accent: "#556044", helmet: "#8F8A66", mask: "#22261C", glove: "#171A13", headwrap: true },
-  mercenary: { fatigue: "#4A5243", fatigueDark: "#383F33", vest: "#1B1F18", accent: "#31392B", helmet: "#272C22", mask: "#121510", glove: "#101310" },
-  raider: { fatigue: "#5A3A1F", fatigueDark: "#452D18", vest: "#241B12", accent: "#3D2E1F", helmet: "#3A2C1B", mask: "#110D08", glove: "#130F0A", headwrap: true },
-  militia: { fatigue: "#5E6B3E", fatigueDark: "#485430", vest: "#252A1B", accent: "#363E26", helmet: "#3C4527", mask: "#14170E", glove: "#11140C" },
+  operator: { species: "bull", fatigue: "#4A3728", fatigueDark: "#392A1E", vest: "#22281E", accent: "#2D5A27", helmet: "#4A5A3C", mask: "#2E2015", glove: "#12150F", snout: "#6B4E33" },
+  desert: { species: "bear", fatigue: "#3A2617", fatigueDark: "#2C1C10", vest: "#3A3A28", accent: "#556044", helmet: "#8F8A66", mask: "#22261C", glove: "#171A13", snout: "#4A3320", headwrap: true },
+  mercenary: { species: "bear", fatigue: "#2A1A0F", fatigueDark: "#20130A", vest: "#1B1F18", accent: "#31392B", helmet: "#272C22", mask: "#121510", glove: "#101310", snout: "#43301D" },
+  raider: { species: "bear", fatigue: "#33200F", fatigueDark: "#26170A", vest: "#241B12", accent: "#3D2E1F", helmet: "#3A2C1B", mask: "#110D08", glove: "#130F0A", snout: "#4A3320", headwrap: true },
+  militia: { species: "bear", fatigue: "#2E1D10", fatigueDark: "#22150A", vest: "#252A1B", accent: "#363E26", helmet: "#3C4527", mask: "#14170E", glove: "#11140C", snout: "#43301D" },
 };
 
 const ENEMY_VARIANTS = ["desert", "mercenary", "raider", "militia"];
@@ -73,6 +81,8 @@ export function Fighter({
   const internal = useRef<FighterState>(makeFighterState());
   const st = stateRef || internal;
   const p = palette;
+  const isBear = p.species === "bear";
+  const tw = isBear ? 1.15 : 1; // bears are heavier through the torso
 
   const root = useRef<THREE.Group>(null);
   const torso = useRef<THREE.Group>(null);
@@ -159,31 +169,36 @@ export function Fighter({
         {/* torso */}
         <group ref={torso} position={[0, 0.05, 0]}>
           <mesh castShadow position={[0, 0.3, 0]}>
-            <boxGeometry args={[0.4, 0.5, 0.23]} />
+            <boxGeometry args={[0.4 * tw, 0.5, 0.23]} />
             {mat(p.fatigue)}
           </mesh>
           {/* plate carrier */}
           <mesh castShadow position={[0, 0.3, 0.02]}>
-            <boxGeometry args={[0.44, 0.44, 0.28]} />
+            <boxGeometry args={[0.44 * tw, 0.44, 0.28]} />
             {mat(p.vest, 0.6, 0.25)}
           </mesh>
-          {[-0.11, 0.11].map((x) => (
+          {[-0.11 * tw, 0.11 * tw].map((x) => (
             <mesh key={x} castShadow position={[x, 0.24, 0.16]}>
               <boxGeometry args={[0.13, 0.15, 0.07]} />
               {mat(p.accent, 0.7, 0.2)}
             </mesh>
           ))}
-          {[-0.12, 0.12].map((x) => (
+          {[-0.12 * tw, 0.12 * tw].map((x) => (
             <mesh key={x} castShadow position={[x, 0.5, 0.07]}>
               <boxGeometry args={[0.08, 0.16, 0.16]} />
               {mat(p.accent, 0.7)}
             </mesh>
           ))}
+          {/* short animal tail on the lower back — points down and out */}
+          <mesh castShadow position={[0, 0.08, -0.16]} rotation={[2.6, 0, 0]}>
+            <coneGeometry args={[0.05, isBear ? 0.12 : 0.2, 5]} />
+            {mat(p.fatigueDark, 0.95)}
+          </mesh>
 
           {/* arms group (raises to aim) */}
           <group ref={arms} position={[0, 0.42, 0.0]}>
             {([-1, 1] as const).map((side) => (
-              <group key={side} ref={side === -1 ? armL : armR} position={[0.26 * side, 0, 0]}>
+              <group key={side} ref={side === -1 ? armL : armR} position={[0.26 * tw * side, 0, 0]}>
                 <mesh castShadow position={[0, 0, 0]}>
                   <boxGeometry args={[0.14, 0.15, 0.18]} />
                   {mat(p.vest, 0.7, 0.2)}
@@ -209,37 +224,82 @@ export function Fighter({
             ) : null}
           </group>
 
-          {/* neck + head */}
+          {/* neck + animal head (bull: wide blocky skull + horns; bear: rounder + heavier) */}
           <group ref={head} position={[0, 0.62, 0]}>
             <mesh castShadow position={[0, -0.05, 0]}>
-              <cylinderGeometry args={[0.07, 0.08, 0.1, 8]} />
-              {mat(p.mask, 0.8)}
+              <cylinderGeometry args={[0.08, 0.1, 0.1, 8]} />
+              {mat(p.fatigueDark, 0.9)}
             </mesh>
-            {/* head / balaclava */}
+            {/* skull — bull hide, or bear balaclava over fur */}
             <mesh castShadow position={[0, 0.08, 0]}>
-              <boxGeometry args={[0.21, 0.25, 0.23]} />
-              {mat(p.mask, 0.85)}
+              <boxGeometry args={isBear ? [0.29, 0.25, 0.26] : [0.27, 0.23, 0.24]} />
+              {mat(isBear ? p.mask : p.fatigue, 0.9)}
             </mesh>
+            {isBear && (
+              /* rounded crown so the bear head reads round, not boxy */
+              <mesh castShadow position={[0, 0.19, 0]}>
+                <boxGeometry args={[0.24, 0.07, 0.21]} />
+                {mat(p.mask, 0.9)}
+              </mesh>
+            )}
+            {/* muzzle: bull = long squared snout, bear = short round muzzle */}
+            <mesh castShadow position={isBear ? [0, -0.02, 0.16] : [0, -0.02, 0.17]}>
+              <boxGeometry args={isBear ? [0.16, 0.13, 0.12] : [0.15, 0.14, 0.14]} />
+              {mat(p.snout, 0.95)}
+            </mesh>
+            {/* nose */}
+            <mesh castShadow position={isBear ? [0, 0.0, 0.225] : [0, -0.05, 0.245]}>
+              <boxGeometry args={isBear ? [0.08, 0.05, 0.03] : [0.13, 0.06, 0.03]} />
+              {mat("#15100B", 0.6)}
+            </mesh>
+            {/* ears: bull = pointed, past the helmet; bear = small rounded */}
+            {([-1, 1] as const).map((side) =>
+              isBear ? (
+                <mesh key={side} castShadow position={[0.125 * side, 0.25, 0]}>
+                  <sphereGeometry args={[0.055, 8, 8]} />
+                  {mat(p.fatigueDark, 0.95)}
+                </mesh>
+              ) : (
+                <mesh key={side} castShadow position={[0.13 * side, 0.28, 0]} rotation={[0, 0, -0.35 * side]}>
+                  <coneGeometry args={[0.038, 0.11, 6]} />
+                  {mat(p.fatigue, 0.95)}
+                </mesh>
+              )
+            )}
+            {/* bull horns — two curved segments per side, bone over a dark base */}
+            {!isBear &&
+              ([-1, 1] as const).map((side) => (
+                <group key={"horn" + side}>
+                  <mesh castShadow position={[0.16 * side, 0.14, 0.02]} rotation={[0, 0, -1.15 * side]}>
+                    <coneGeometry args={[0.05, 0.2, 8]} />
+                    {mat(HORN_BASE, 0.85)}
+                  </mesh>
+                  <mesh castShadow position={[0.26 * side, 0.24, 0.02]} rotation={[0, 0, -0.45 * side]}>
+                    <coneGeometry args={[0.033, 0.18, 8]} />
+                    {mat(HORN, 0.7)}
+                  </mesh>
+                </group>
+              ))}
             {/* head wrap or helmet */}
             {p.headwrap ? (
-              <mesh castShadow position={[0, 0.16, 0]}>
-                <boxGeometry args={[0.25, 0.14, 0.26]} />
+              <mesh castShadow position={[0, 0.17, 0]}>
+                <boxGeometry args={[0.28, 0.12, 0.27]} />
                 {mat(p.helmet, 0.9)}
               </mesh>
             ) : (
               <>
-                <mesh castShadow position={[0, 0.18, 0]}>
-                  <boxGeometry args={[0.25, 0.15, 0.27]} />
+                <mesh castShadow position={[0, 0.19, 0]}>
+                  <boxGeometry args={isBear ? [0.3, 0.13, 0.28] : [0.29, 0.13, 0.26]} />
                   {mat(p.helmet, 0.55, 0.3)}
                 </mesh>
-                <mesh castShadow position={[0, 0.13, 0.12]}>
-                  <boxGeometry args={[0.26, 0.06, 0.06]} />
+                <mesh castShadow position={[0, 0.15, 0.12]}>
+                  <boxGeometry args={[0.28, 0.05, 0.06]} />
                   {mat(p.helmet, 0.55, 0.3)}
                 </mesh>
               </>
             )}
-            {/* single narrow tactical visor slit — no eyeballs, clean operator look */}
-            <group position={[0, 0.085, 0.115]}>
+            {/* narrow tactical goggle slit above the muzzle — clean operator look */}
+            <group position={[0, 0.075, isBear ? 0.135 : 0.125]}>
               {/* recessed dark slit opening */}
               <mesh>
                 <boxGeometry args={[0.2, 0.045, 0.03]} />
@@ -250,10 +310,10 @@ export function Fighter({
                 <boxGeometry args={[0.18, 0.018, 0.01]} />
                 <meshStandardMaterial color="#8a8472" roughness={0.4} metalness={0.2} emissive="#15140f" emissiveIntensity={0.3} />
               </mesh>
-              {/* brow line above the slit (mask) */}
+              {/* brow line above the slit */}
               <mesh position={[0, 0.035, 0.004]}>
                 <boxGeometry args={[0.21, 0.028, 0.04]} />
-                {mat(p.mask, 0.85)}
+                {mat(isBear ? p.mask : p.fatigue, 0.85)}
               </mesh>
             </group>
           </group>
