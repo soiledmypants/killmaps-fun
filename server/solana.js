@@ -30,12 +30,12 @@ const MIN_TOKENS = Number(process.env.MIN_TOKENS || 250000);
 // Display ticker/symbol for the token, surfaced to the client via /api/config.
 const TOKEN_TICKER = (process.env.TOKEN_TICKER || "BS").trim();
 
-// DEV-ONLY bypass. When DISABLE_TOKEN_VERIFICATION=true the real verification code
-// below is skipped: every wallet is treated as a verified holder so the full app can
-// be tested without holding tokens. Set to false (or unset) in production to restore
-// the real 250,000-token on-chain SPL balance check. NEVER enable in production.
+// Verification bypass — currently ON BY DEFAULT (verification removed): every wallet
+// is treated as a verified holder, so all players can earn without a token check.
+// To re-enable the real on-chain SPL balance check, set DISABLE_TOKEN_VERIFICATION=false
+// AND configure a paid SOLANA_RPC_URL (the free public RPC 429-rate-limits lookups).
 const DISABLE_TOKEN_VERIFICATION =
-  String(process.env.DISABLE_TOKEN_VERIFICATION || "").toLowerCase() === "true";
+  String(process.env.DISABLE_TOKEN_VERIFICATION ?? "true").toLowerCase() !== "false";
 
 /** Load a Keypair from a base58 string (Phantom export) or a JSON array. Never logs the secret. */
 function loadKeypair(secret, label) {

@@ -64,6 +64,8 @@ export default function Profile() {
         <p className="text-sm text-steel leading-relaxed">
           {player?.verified ? (
             <>You are a <span className="text-verify font-semibold">verified player</span>. Your kills against other verified players generate rewards.</>
+          ) : config?.devVerifyOff ? (
+            <>Verification is <span className="text-verify font-semibold">open</span> — hit Re-check and every registered wallet earns from kills.</>
           ) : (
             <>Hold at least <span className="text-accent font-mono">{(config?.minTokens ?? 250000).toLocaleString()}</span> <span className="text-accent font-semibold">{TICKER_TAG}</span> in your payout wallet to become verified on Solana mainnet.</>
           )}

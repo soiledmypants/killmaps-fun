@@ -25,9 +25,10 @@ services:
       # Token ticker/symbol surfaced in the UI (e.g. "$BS").
       - key: TOKEN_TICKER
         value: "BS"
-      # Production MUST keep real token verification on. (DEV-only bypass flag.)
+      # Verification REMOVED — every wallet is treated as verified so all players
+      # can earn. Set to "false" (+ a paid SOLANA_RPC_URL) to bring the check back.
       - key: DISABLE_TOKEN_VERIFICATION
-        value: "false"
+        value: "true"
       # Anti-farm threshold profile: "launch" (strict — production) or "testing"
       # (relaxed: bypasses creator-self-farm + same-IP, easy to verify payouts).
       - key: REWARD_MODE

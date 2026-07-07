@@ -43,9 +43,13 @@ export function IdentityModal({ onClose }: { onClose: () => void }) {
 
         <p className="text-sm text-steel mb-5 leading-relaxed">
           Enter a username and your Solana <span className="text-white">payout wallet</span>. No wallet
-          connect — your address is used to verify {TICKER_TAG} holdings and to receive reward payouts.
-          Hold at least <span className="text-accent font-mono">{minTokens.toLocaleString()}</span> <span className="text-accent font-semibold">{TICKER_TAG}</span> to
-          become a verified player whose kills generate rewards.
+          connect — your address is used to receive reward payouts.{" "}
+          {config?.devVerifyOff ? (
+            <>Verification is <span className="text-verify font-semibold">open</span> — every registered wallet earns from kills.</>
+          ) : (
+            <>Hold at least <span className="text-accent font-mono">{minTokens.toLocaleString()}</span> <span className="text-accent font-semibold">{TICKER_TAG}</span> to
+            become a verified player whose kills generate rewards.</>
+          )}
         </p>
 
         <label className="label">Username</label>
