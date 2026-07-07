@@ -12,7 +12,7 @@ ledger, settled in batches from the treasury. Anti-farming is enforced from day 
 
 **Solana mainnet-beta.**
 
-- Token: **$BS** — CA `CkZTQQw1gNrqv1q4V5txXURJ6Htp1T8Qjz5gZbS4pump`
+- Token: **$BS** — CA `6XhuxmoBDgJTPQUjoxWSdsAQuoqBbGW7x3yeipcrpump`
 - Verification: hold ≥ 250,000 **$BS** (real on-chain SPL balance check on mainnet-beta).
 - Live site: https://bullstrike.fun
 - X / Twitter: https://x.com/BULLSTRIKE_FUN
@@ -79,7 +79,7 @@ GET /api/transactions · GET /api/leaderboard · GET /api/treasury`
 | `DATABASE_URL` | Neon/managed Postgres (Render disk is ephemeral) |
 | `SOLANA_RPC_URL` | paid mainnet RPC (Helius/QuickNode/Triton) — required for verification + payouts |
 | `SOLANA_CLUSTER` | `mainnet-beta` |
-| `TOKEN_CA` | the $BS pump.fun token mint players must hold (`CkZTQQw1gNrqv1q4V5txXURJ6Htp1T8Qjz5gZbS4pump`) |
+| `TOKEN_CA` | the $BS pump.fun token mint players must hold (`6XhuxmoBDgJTPQUjoxWSdsAQuoqBbGW7x3yeipcrpump`) |
 | `MIN_TOKENS` | verification threshold (default 250000) |
 | `TREASURY_WALLET_PRIVATE_KEY` | signs all creator reward settlements + player payouts (dashboard-only secret) |
 | `CREATOR_REWARDS_WALLET_PRIVATE_KEY` | dev/rewards wallet, separate from the treasury (dashboard-only secret) |

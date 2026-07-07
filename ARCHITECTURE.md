@@ -61,7 +61,7 @@ Backend systems found and their fit for BULLSTRIKE:
 
 - **Token verification** — the foundation verified *deposits*; BULLSTRIKE verifies
   *token holdings*. The backend reads the SPL token balance of a wallet for `TOKEN_CA`
-  ($BS mint `CkZTQQw1gNrqv1q4V5txXURJ6Htp1T8Qjz5gZbS4pump`) on mainnet and checks
+  ($BS mint `6XhuxmoBDgJTPQUjoxWSdsAQuoqBbGW7x3yeipcrpump`) on mainnet and checks
   `>= MIN_TOKENS` (250,000). Cached with periodic recheck. MOCK mode (no RPC) returns
   unverified-but-playable.
 - **Map data model** — forest FPS arena maps (stone walls / forest floors / dirt ramps /
