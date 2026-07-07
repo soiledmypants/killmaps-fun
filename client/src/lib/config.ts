@@ -27,8 +27,8 @@ export const TICKER_TAG = `$${TICKER}`; // e.g. "$BS"
 
 export const MIN_TOKENS_DISPLAY = 250000;
 
-/** Format a SOL amount for display, e.g. 0.0025 SOL. 4 dp so small per-kill rewards
- *  (0.0025) render exactly rather than rounding. All rewards are denominated in SOL. */
+/** Format a SOL amount for display, e.g. 0.0100 SOL. 4 dp so small per-kill rewards
+ *  (0.01) render exactly rather than rounding. All rewards are denominated in SOL. */
 export function fmtSol(n: number | null | undefined, dp = 4): string {
   return `${(Number(n) || 0).toFixed(dp)} SOL`;
 }

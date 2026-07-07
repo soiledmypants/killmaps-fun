@@ -190,7 +190,7 @@ function Arena({ map, cbs }: { map: GameMap; cbs: Cbs }) {
         if (d.killer.id === net.selfId() && d.victim.id !== net.selfId()) {
           g.set({ kills: g.kills + 1, score: g.score + (d.head ? 150 : 100) });
           // show whether this kill credited the creator reward, and if not, exactly why
-          if (d.counted) g.set({ notice: `Reward kill — creator +${d.credited ?? 0.0025} SOL`, noticeAt: performance.now(), lastKillInfo: "Verified kill counted" });
+          if (d.counted) g.set({ notice: `Reward kill — creator +${d.credited ?? 0.01} SOL`, noticeAt: performance.now(), lastKillInfo: "Verified kill counted" });
           else {
             const why = d.reason === "match too short" ? "match too new — rewards start after 60s" : d.reason || "rejected";
             g.set({ notice: `Kill not rewarded: ${why}`, noticeAt: performance.now(), lastKillInfo: `Not counted: ${why}` });
