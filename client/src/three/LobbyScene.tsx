@@ -4,7 +4,7 @@ import * as THREE from "three";
 import { LobbyEnvironment } from "./LobbyEnvironment";
 import { Fighter, PALETTES } from "./Fighter";
 
-const HAZE = "#cdb78d"; // dusty desert horizon
+const HAZE = "#5a7050"; // misty forest horizon
 
 function Rig() {
   useFrame((s) => {
@@ -34,12 +34,12 @@ export function LobbyScene() {
       <color attach="background" args={[HAZE]} />
       <fog attach="fog" args={[HAZE, 10, 55]} />
 
-      {/* bright desert sun + sky fill + warm bounce */}
-      <hemisphereLight args={["#cfe0e8", "#7a6238", 0.9]} />
-      <directionalLight position={[10, 16, 6]} intensity={1.7} color="#ffe9c2" castShadow shadow-mapSize={[2048, 2048]} shadow-bias={-0.0004}>
+      {/* golden sun through the canopy + green sky fill + warm bounce */}
+      <hemisphereLight args={["#b8d4b0", "#2E4A24", 0.85]} />
+      <directionalLight position={[10, 16, 6]} intensity={1.6} color="#ffe3a8" castShadow shadow-mapSize={[2048, 2048]} shadow-bias={-0.0004}>
         <orthographicCamera attach="shadow-camera" args={[-14, 14, 14, -14, 0.1, 60]} />
       </directionalLight>
-      <directionalLight position={[-8, 4, -6]} intensity={0.4} color="#b9893f" />
+      <directionalLight position={[-8, 4, -6]} intensity={0.4} color="#8a7a3f" />
 
       <LobbyEnvironment />
       <Operator />

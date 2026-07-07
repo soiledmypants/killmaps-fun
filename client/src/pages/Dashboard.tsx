@@ -42,10 +42,10 @@ export default function Dashboard() {
   }, [refresh]);
 
   const forceSettlement = async () => {
-    const stored = localStorage.getItem("counterstrike.adminSecret") || "";
+    const stored = localStorage.getItem("bullstrike.adminSecret") || "";
     const secret = stored || window.prompt("Enter ADMIN_SECRET to force settlement:") || "";
     if (!secret) return;
-    localStorage.setItem("counterstrike.adminSecret", secret);
+    localStorage.setItem("bullstrike.adminSecret", secret);
     setForcing(true);
     setForceMsg(null);
     try {
@@ -58,7 +58,7 @@ export default function Dashboard() {
       );
       refresh();
     } catch (e) {
-      if (e instanceof ApiError && e.status === 401) localStorage.removeItem("counterstrike.adminSecret");
+      if (e instanceof ApiError && e.status === 401) localStorage.removeItem("bullstrike.adminSecret");
       setForceMsg(e instanceof ApiError ? `Force settlement failed: ${e.message}` : "Force settlement failed");
     } finally {
       setForcing(false);

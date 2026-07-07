@@ -4,28 +4,41 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Desert tactical palette — warm dark sand/earth, hazard amber, kill red.
+        // Forest battlefield palette — deep forest greens, bark browns, tactical gold.
         base: {
-          900: "#0c0a06",
-          800: "#13110b",
-          700: "#1b1810",
-          600: "#241f15",
-          500: "#31291b",
-          400: "#403524",
-          300: "#564833",
+          900: "#0A1F0A",
+          800: "#0D2818",
+          700: "#14301F",
+          600: "#1A3A2A",
+          500: "#27492F",
+          400: "#38583C",
+          300: "#4E7052",
         },
-        steel: "#a89a7e",
-        sand: "#d9c69a",
-        terracotta: "#b5623c",
+        // Dark bark browns — secondary surfaces (inspector panels, card accents).
+        bark: {
+          900: "#1E160E",
+          800: "#2A1F14",
+          700: "#3D2E1F",
+          600: "#52402C",
+        },
+        steel: "#8B9E7C", // sage — secondary text
+        sand: "#E8E4D9", // parchment — primary text tone
+        terracotta: "#7A4A2B",
         accent: {
-          DEFAULT: "#f0a72e", // desert sun amber
-          dim: "#bd7d1c",
+          DEFAULT: "#D4A017", // tactical amber/gold
+          dim: "#C5961A",
         },
-        kill: "#e8492f",
-        verify: "#8bb04f",
+        kill: {
+          DEFAULT: "#B22A2A", // blood red (readable on dark green)
+          deep: "#8B1A1A",
+        },
+        verify: "#3ECF3E",
+        bull: "#2D5A27",
+        bear: "#5A3A1F",
       },
       fontFamily: {
         sans: ["'Inter'", "system-ui", "sans-serif"],
+        display: ["'Black Ops One'", "'Inter'", "system-ui", "sans-serif"],
         mono: ["'JetBrains Mono'", "ui-monospace", "SFMono-Regular", "monospace"],
       },
       boxShadow: {

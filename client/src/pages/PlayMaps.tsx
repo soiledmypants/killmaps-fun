@@ -70,7 +70,7 @@ export default function PlayMaps() {
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {maps.map((m) => (
-            <div key={m.map_id} className="panel overflow-hidden group">
+            <div key={m.map_id} className="panel overflow-hidden group border-bark-600 hover:border-accent/50 transition-colors">
               <div className="relative aspect-video bg-base-900 border-b border-base-500">
                 <MapThumb map={m} className="w-full h-full" />
                 <div className="absolute inset-0 bg-gradient-to-t from-base-900/80 to-transparent" />

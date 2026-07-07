@@ -1,8 +1,8 @@
 {
-  "name": "killmaps-fun",
+  "name": "bullstrike-fun",
   "private": true,
   "version": "0.1.0",
-  "description": "KillMaps.fun - build FPS maps, get verified players, earn from real verified kills. Solana mainnet.",
+  "description": "BULLSTRIKE - build FPS maps, choose bull or bear, earn from real verified kills. Solana mainnet.",
   "scripts": {
     "dev": "concurrently -n server,client -c blue,green \"npm:dev:server\" \"npm:dev:client\"",
     "dev:client": "npm --prefix client run dev",

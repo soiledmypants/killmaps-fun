@@ -30,12 +30,13 @@ export interface Palette {
   headwrap?: boolean;
 }
 
+// Woodland camo kits. "desert" key kept as a legacy id (now a scout/khaki variant).
 export const PALETTES: Record<string, Palette> = {
-  operator: { fatigue: "#9a8763", fatigueDark: "#7c6a4c", vest: "#2b2722", accent: "#3c352a", helmet: "#6f6047", mask: "#1b1916", glove: "#161310" },
-  desert: { fatigue: "#bda978", fatigueDark: "#988450", vest: "#4a3f2c", accent: "#6b5a3a", helmet: "#cdbf9a", mask: "#2a2620", glove: "#1c1813", headwrap: true },
-  mercenary: { fatigue: "#5b5347", fatigueDark: "#433d34", vest: "#1f1d1a", accent: "#3a352d", helmet: "#2c2a25", mask: "#141310", glove: "#121110" },
-  raider: { fatigue: "#7a4f3a", fatigueDark: "#5d3b2b", vest: "#241b15", accent: "#3e2c20", helmet: "#3a281d", mask: "#120d0a", glove: "#140f0b", headwrap: true },
-  militia: { fatigue: "#6e6f4a", fatigueDark: "#54552f", vest: "#2a2a1d", accent: "#3d3d28", helmet: "#454529", mask: "#16160f", glove: "#13130d" },
+  operator: { fatigue: "#5C6B48", fatigueDark: "#47543A", vest: "#22281E", accent: "#2D5A27", helmet: "#4A5A3C", mask: "#161A12", glove: "#12150F" },
+  desert: { fatigue: "#8A8560", fatigueDark: "#6E6A48", vest: "#3A3A28", accent: "#556044", helmet: "#8F8A66", mask: "#22261C", glove: "#171A13", headwrap: true },
+  mercenary: { fatigue: "#4A5243", fatigueDark: "#383F33", vest: "#1B1F18", accent: "#31392B", helmet: "#272C22", mask: "#121510", glove: "#101310" },
+  raider: { fatigue: "#5A3A1F", fatigueDark: "#452D18", vest: "#241B12", accent: "#3D2E1F", helmet: "#3A2C1B", mask: "#110D08", glove: "#130F0A", headwrap: true },
+  militia: { fatigue: "#5E6B3E", fatigueDark: "#485430", vest: "#252A1B", accent: "#363E26", helmet: "#3C4527", mask: "#14170E", glove: "#11140C" },
 };
 
 const ENEMY_VARIANTS = ["desert", "mercenary", "raider", "militia"];

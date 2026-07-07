@@ -2,103 +2,96 @@ import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
-// Original desert-compound environment (Dust-2-style atmosphere, no ripped assets):
-// sand yard, adobe buildings, arched market alley, palm trees, crates, barrels,
-// stone walls and drifting dust motes.
-const SAND = "#c2a878";
-const SAND_DK = "#a98f5f";
-const ADOBE = "#cbb286";
-const ADOBE_DK = "#a98a5e";
-const ADOBE_SH = "#8f7350";
-const STONE = "#b3a892";
-const WOOD = "#9c7444";
-const PALM = "#6e5638";
-const FROND = "#5f7a39";
-const FROND_DK = "#4d6730";
+// Original forest-battlefield environment (no ripped assets): grass clearing,
+// pines and broadleaf trees, boulders, fallen logs, sandbag emplacements, a
+// timber watchtower and drifting pollen motes in the golden light.
+const GRASS = "#2E4A24";
+const GRASS_DK = "#243B1C";
+const DIRT = "#4A3B26";
+const BARK = "#3D2E1F";
+const BARK_LT = "#52402C";
+const PINE = "#1F3D1B";
+const PINE_LT = "#2C5226";
+const LEAF = "#3E6B2E";
+const LEAF_DK = "#325724";
+const ROCK = "#6B7A5E";
+const SANDBAG = "#7A6B4A";
+const TIMBER = "#5C4630";
 
-function Adobe({ position, w = 4, h = 3.5, d = 4, color = ADOBE, arch = false }: { position: [number, number, number]; w?: number; h?: number; d?: number; color?: string; arch?: boolean }) {
-  return (
-    <group position={position}>
-      <mesh castShadow receiveShadow position={[0, h / 2, 0]}>
-        <boxGeometry args={[w, h, d]} />
-        <meshStandardMaterial color={color} roughness={0.95} />
-      </mesh>
-      {/* parapet */}
-      <mesh castShadow position={[0, h + 0.12, 0]}>
-        <boxGeometry args={[w + 0.2, 0.24, d + 0.2]} />
-        <meshStandardMaterial color={ADOBE_DK} roughness={0.95} />
-      </mesh>
-      {/* recessed windows */}
-      {[-w / 4, w / 4].map((x) => (
-        <mesh key={x} position={[x, h * 0.6, d / 2 + 0.02]}>
-          <boxGeometry args={[w * 0.16, h * 0.22, 0.12]} />
-          <meshStandardMaterial color={ADOBE_SH} roughness={1} />
-        </mesh>
-      ))}
-      {/* doorway / arch */}
-      {arch && (
-        <mesh position={[0, h * 0.28, d / 2 + 0.03]}>
-          <boxGeometry args={[w * 0.26, h * 0.5, 0.14]} />
-          <meshStandardMaterial color="#3a2c1c" roughness={1} />
-        </mesh>
-      )}
-    </group>
-  );
-}
-
-function MarketArch({ position }: { position: [number, number, number] }) {
-  return (
-    <group position={position}>
-      {[-1.4, 1.4].map((x) => (
-        <mesh key={x} castShadow position={[x, 1.4, 0]}>
-          <boxGeometry args={[0.5, 2.8, 0.5]} />
-          <meshStandardMaterial color={ADOBE} roughness={0.95} />
-        </mesh>
-      ))}
-      <mesh castShadow position={[0, 2.9, 0]}>
-        <boxGeometry args={[3.6, 0.5, 0.6]} />
-        <meshStandardMaterial color={ADOBE_DK} roughness={0.95} />
-      </mesh>
-      {/* awning */}
-      <mesh castShadow position={[0, 2.55, 0.7]} rotation={[0.5, 0, 0]}>
-        <boxGeometry args={[3.2, 0.06, 1.2]} />
-        <meshStandardMaterial color="#9c4a3a" roughness={0.9} />
-      </mesh>
-    </group>
-  );
-}
-
-function Palm({ position, lean = 0.1, s = 1 }: { position: [number, number, number]; lean?: number; s?: number }) {
-  const fronds = 8;
+function Pine({ position, s = 1, lean = 0 }: { position: [number, number, number]; s?: number; lean?: number }) {
   return (
     <group position={position} rotation={[0, 0, lean]} scale={s}>
-      {[0, 1, 2, 3].map((i) => (
-        <mesh key={i} castShadow position={[i * 0.06, 0.5 + i * 0.9, 0]} rotation={[0, 0, -0.04 * i]}>
-          <cylinderGeometry args={[0.16 - i * 0.02, 0.2 - i * 0.02, 0.95, 7]} />
-          <meshStandardMaterial color={PALM} roughness={1} />
+      <mesh castShadow position={[0, 1.2, 0]}>
+        <cylinderGeometry args={[0.18, 0.28, 2.4, 7]} />
+        <meshStandardMaterial color={BARK} roughness={1} />
+      </mesh>
+      {[0, 1, 2].map((i) => (
+        <mesh key={i} castShadow position={[0, 2.2 + i * 1.15, 0]}>
+          <coneGeometry args={[1.7 - i * 0.45, 1.7, 8]} />
+          <meshStandardMaterial color={i % 2 ? PINE_LT : PINE} roughness={0.95} />
         </mesh>
       ))}
-      <group position={[0.2, 4.0, 0]}>
-        {Array.from({ length: fronds }).map((_, i) => {
-          const a = (i / fronds) * Math.PI * 2;
-          return (
-            <mesh key={i} castShadow position={[Math.cos(a) * 0.7, -0.1, Math.sin(a) * 0.7]} rotation={[Math.sin(a) * 0.5, -a, 0.5]}>
-              <boxGeometry args={[1.6, 0.06, 0.34]} />
-              <meshStandardMaterial color={i % 2 ? FROND : FROND_DK} roughness={0.85} side={THREE.DoubleSide} />
-            </mesh>
-          );
-        })}
-      </group>
     </group>
   );
 }
 
-function Barrel({ position, color = "#7a5236" }: { position: [number, number, number]; color?: string }) {
+function Oak({ position, s = 1 }: { position: [number, number, number]; s?: number }) {
   return (
-    <mesh castShadow receiveShadow position={position}>
-      <cylinderGeometry args={[0.42, 0.42, 1.2, 14]} />
-      <meshStandardMaterial color={color} roughness={0.6} metalness={0.3} />
+    <group position={position} scale={s}>
+      <mesh castShadow position={[0, 1.4, 0]}>
+        <cylinderGeometry args={[0.22, 0.34, 2.8, 7]} />
+        <meshStandardMaterial color={BARK_LT} roughness={1} />
+      </mesh>
+      {[[-0.6, 3.0, 0.2, 1.1], [0.7, 3.2, -0.3, 1.0], [0, 3.9, 0.1, 1.25], [0.1, 2.8, 0.7, 0.8]].map(([x, y, z, r], i) => (
+        <mesh key={i} castShadow position={[x, y, z]}>
+          <icosahedronGeometry args={[r, 1]} />
+          <meshStandardMaterial color={i % 2 ? LEAF : LEAF_DK} roughness={0.9} flatShading />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+function Boulder({ position, s = 1 }: { position: [number, number, number]; s?: number }) {
+  return (
+    <mesh castShadow receiveShadow position={position} scale={[s, s * 0.75, s]} rotation={[0.2, 1.1, 0.1]}>
+      <icosahedronGeometry args={[0.9, 0]} />
+      <meshStandardMaterial color={ROCK} roughness={0.95} flatShading />
     </mesh>
+  );
+}
+
+function FallenLog({ position, rotY = 0, len = 3 }: { position: [number, number, number]; rotY?: number; len?: number }) {
+  return (
+    <group position={position} rotation={[0, rotY, Math.PI / 2]}>
+      <mesh castShadow receiveShadow>
+        <cylinderGeometry args={[0.35, 0.42, len, 9]} />
+        <meshStandardMaterial color={BARK} roughness={1} />
+      </mesh>
+      <mesh position={[0, len / 2 + 0.005, 0]}>
+        <cylinderGeometry args={[0.34, 0.34, 0.02, 9]} />
+        <meshStandardMaterial color={TIMBER} roughness={1} />
+      </mesh>
+    </group>
+  );
+}
+
+function Sandbags({ position, rotY = 0 }: { position: [number, number, number]; rotY?: number }) {
+  const bag = (x: number, y: number, z: number) => (
+    <mesh key={`${x}-${y}-${z}`} castShadow receiveShadow position={[x, y, z]}>
+      <boxGeometry args={[0.9, 0.34, 0.5]} />
+      <meshStandardMaterial color={SANDBAG} roughness={1} />
+    </mesh>
+  );
+  return (
+    <group position={position} rotation={[0, rotY, 0]}>
+      {bag(-0.9, 0.17, 0)}
+      {bag(0, 0.17, 0)}
+      {bag(0.9, 0.17, 0)}
+      {bag(-0.45, 0.51, 0)}
+      {bag(0.45, 0.51, 0)}
+      {bag(0, 0.85, 0)}
+    </group>
   );
 }
 
@@ -106,12 +99,40 @@ function Crate({ position, s = 1 }: { position: [number, number, number]; s?: nu
   return (
     <mesh castShadow receiveShadow position={position}>
       <boxGeometry args={[1.1 * s, 1.1 * s, 1.1 * s]} />
-      <meshStandardMaterial color={WOOD} roughness={0.92} />
+      <meshStandardMaterial color={TIMBER} roughness={0.92} />
     </mesh>
   );
 }
 
-function DustMotes() {
+function Watchtower({ position }: { position: [number, number, number] }) {
+  return (
+    <group position={position}>
+      {[[-1.1, -1.1], [1.1, -1.1], [-1.1, 1.1], [1.1, 1.1]].map(([x, z], i) => (
+        <mesh key={i} castShadow position={[x, 2, z]}>
+          <boxGeometry args={[0.28, 4, 0.28]} />
+          <meshStandardMaterial color={TIMBER} roughness={1} />
+        </mesh>
+      ))}
+      <mesh castShadow position={[0, 4.1, 0]}>
+        <boxGeometry args={[3, 0.22, 3]} />
+        <meshStandardMaterial color={BARK_LT} roughness={1} />
+      </mesh>
+      {[[0, 4.75, 1.4, 3, 0.9, 0.12], [0, 4.75, -1.4, 3, 0.9, 0.12], [1.4, 4.75, 0, 0.12, 0.9, 3], [-1.4, 4.75, 0, 0.12, 0.9, 3]].map(([x, y, z, w, h, d], i) => (
+        <mesh key={"r" + i} castShadow position={[x, y, z]}>
+          <boxGeometry args={[w, h, d]} />
+          <meshStandardMaterial color={TIMBER} roughness={1} />
+        </mesh>
+      ))}
+      <mesh castShadow position={[0, 5.8, 0]}>
+        <coneGeometry args={[2.4, 1.2, 4]} />
+        <meshStandardMaterial color={PINE} roughness={1} flatShading />
+      </mesh>
+    </group>
+  );
+}
+
+// Drifting pollen / dust motes in the golden light.
+function PollenMotes() {
   const ref = useRef<THREE.Points>(null);
   const geo = useMemo(() => {
     const g = new THREE.BufferGeometry();
@@ -129,15 +150,15 @@ function DustMotes() {
     if (!ref.current) return;
     const arr = (ref.current.geometry.getAttribute("position") as THREE.BufferAttribute).array as Float32Array;
     for (let i = 0; i < arr.length; i += 3) {
-      arr[i] += dt * 0.6; // drift on wind
-      arr[i + 1] += Math.sin(s.clock.elapsedTime + i) * dt * 0.05;
+      arr[i] += dt * 0.4; // drift on the breeze
+      arr[i + 1] += Math.sin(s.clock.elapsedTime + i) * dt * 0.06;
       if (arr[i] > 20) arr[i] = -20;
     }
     (ref.current.geometry.getAttribute("position") as THREE.BufferAttribute).needsUpdate = true;
   });
   return (
     <points ref={ref} geometry={geo}>
-      <pointsMaterial color="#e7d8b4" size={0.06} transparent opacity={0.5} sizeAttenuation depthWrite={false} />
+      <pointsMaterial color="#e8d9a0" size={0.05} transparent opacity={0.45} sizeAttenuation depthWrite={false} />
     </points>
   );
 }
@@ -145,51 +166,49 @@ function DustMotes() {
 export function LobbyEnvironment() {
   return (
     <group>
-      {/* sand ground */}
+      {/* grass ground */}
       <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[300, 300]} />
-        <meshStandardMaterial color={SAND} roughness={1} />
+        <meshStandardMaterial color={GRASS} roughness={1} />
       </mesh>
-      {/* worn sand patches */}
+      {/* worn dirt patches */}
       {[[-3, 2], [4, -1], [0, 4]].map(([x, z], i) => (
         <mesh key={i} rotation={[-Math.PI / 2, 0, 0]} position={[x, 0.01, z]}>
           <circleGeometry args={[2.4 + i, 24]} />
-          <meshStandardMaterial color={SAND_DK} roughness={1} />
+          <meshStandardMaterial color={i === 1 ? DIRT : GRASS_DK} roughness={1} />
         </mesh>
       ))}
 
-      {/* compound buildings */}
-      <Adobe position={[-9, 0, -12]} w={7} h={5} d={6} color={ADOBE} arch />
-      <Adobe position={[9, 0, -13]} w={8} h={6.5} d={7} color={ADOBE_DK} />
-      <Adobe position={[-2, 0, -17]} w={6} h={4} d={5} color={ADOBE} />
-      <Adobe position={[15, 0, -6]} w={5} h={4.5} d={6} color={ADOBE_DK} arch />
+      {/* treeline */}
+      <Pine position={[-9, 0, -12]} s={1.4} />
+      <Pine position={[-13, 0, -8]} s={1.1} lean={0.04} />
+      <Pine position={[9, 0, -13]} s={1.6} />
+      <Pine position={[13, 0, -9]} s={1.2} lean={-0.05} />
+      <Pine position={[-2, 0, -17]} s={1.5} />
+      <Pine position={[4, 0, -16]} s={1.15} />
+      <Pine position={[16, 0, -4]} s={1.3} />
+      <Oak position={[-15, 0, -2]} s={1.2} />
+      <Oak position={[-6.5, 0, -9]} s={1.0} />
+      <Oak position={[7, 0, -7]} s={1.15} />
+      <Oak position={[12, 0, -14]} s={0.9} />
 
-      {/* market alley */}
-      <MarketArch position={[-6, 0, -3]} />
-      <Adobe position={[-10, 0, -2]} w={3.5} h={3} d={4} color={ADOBE} arch />
+      {/* watchtower on the flank */}
+      <Watchtower position={[-10, 0, -5]} />
 
-      {/* low stone perimeter wall */}
-      {[-14, -7, 7, 14].map((x) => (
-        <mesh key={x} castShadow receiveShadow position={[x, 0.6, 6]}>
-          <boxGeometry args={[6, 1.2, 0.6]} />
-          <meshStandardMaterial color={STONE} roughness={0.95} />
-        </mesh>
-      ))}
+      {/* boulders + deadfall */}
+      <Boulder position={[6, 0.5, 1.5]} s={1.2} />
+      <Boulder position={[7.2, 0.35, 0.6]} s={0.8} />
+      <Boulder position={[-7, 0.45, 2.5]} s={1.0} />
+      <FallenLog position={[-3.6, 0.4, -1.6]} rotY={0.5} len={3.4} />
+      <FallenLog position={[5, 0.4, -4]} rotY={-0.9} len={2.6} />
 
-      {/* palms */}
-      <Palm position={[-6.5, 0, 1.5]} lean={0.08} s={1.05} />
-      <Palm position={[7, 0, -2]} lean={-0.1} s={0.95} />
-      <Palm position={[12, 0, -10]} lean={0.05} s={1.1} />
+      {/* forward emplacement near the operator */}
+      <Sandbags position={[3.4, 0, -1.4]} rotY={0.4} />
+      <Crate position={[4.5, 0.55, -2.6]} />
+      <Crate position={[4.0, 1.55, -2.2]} s={0.85} />
+      <Sandbags position={[-4.6, 0, -0.6]} rotY={-0.5} />
 
-      {/* crates + barrels near the operator */}
-      <Crate position={[3.4, 0.55, -1.4]} />
-      <Crate position={[4.3, 0.55, -2.3]} />
-      <Crate position={[3.9, 1.55, -1.9]} s={0.9} />
-      <Barrel position={[-3.6, 0.6, -1.6]} />
-      <Barrel position={[-4.3, 0.6, -2.6]} color="#3f5560" />
-      <Crate position={[-4.4, 0.55, -1.0]} s={1.1} />
-
-      <DustMotes />
+      <PollenMotes />
     </group>
   );
 }

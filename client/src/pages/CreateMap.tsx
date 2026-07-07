@@ -125,8 +125,8 @@ export default function CreateMap() {
       {/* Top bar */}
       <div className="h-12 shrink-0 border-b border-base-500 bg-base-800 flex items-center gap-2 px-3">
         <Link to="/" className="flex items-center gap-2 mr-2">
-          <Target size={18} className="text-accent" />
-          <span className="font-bold text-sm hidden sm:block">COUNTER<span className="text-accent">STRIKE</span></span>
+          <span className="text-lg leading-none">🐂</span>
+          <span className="font-display text-sm hidden sm:block border-b-2 border-accent">BULL<span className="text-accent">STRIKE</span></span>
         </Link>
         <input
           className="bg-transparent border-0 text-sm font-semibold text-white focus:outline-none w-44 sm:w-56 border-b border-transparent focus:border-accent/50"
@@ -204,7 +204,7 @@ export default function CreateMap() {
         </div>
 
         {/* Right inspector */}
-        <div className="w-64 shrink-0 border-l border-base-500 bg-base-800 overflow-y-auto scroll-thin">
+        <div className="w-64 shrink-0 border-l border-bark-600 bg-bark-800 overflow-y-auto scroll-thin">
           {selected ? (
             <Inspector
               object={selected}
@@ -225,7 +225,7 @@ export default function CreateMap() {
 function GateBar() {
   return (
     <div className="h-12 border-b border-base-500 bg-base-800 flex items-center px-4">
-      <Link to="/" className="flex items-center gap-2"><Target size={18} className="text-accent" /><span className="font-bold text-sm text-white">COUNTER<span className="text-accent">STRIKE</span></span></Link>
+      <Link to="/" className="flex items-center gap-2"><span className="text-lg leading-none">🐂</span><span className="font-display text-sm text-white border-b-2 border-accent">BULL<span className="text-accent">STRIKE</span></span></Link>
     </div>
   );
 }
@@ -271,8 +271,8 @@ function Inspector({ object, onChange, onDelete, onDuplicate, onClose }: {
           <div className="flex gap-1">
             {(["A", "B"] as const).map((t) => (
               <button key={t} onClick={() => onChange({ settings: { ...object.settings, team: t } })}
-                className={`flex-1 py-1.5 text-sm font-semibold border ${object.settings?.team === t ? (t === "A" ? "border-blue-500 bg-blue-500/20 text-blue-300" : "border-kill bg-kill/20 text-kill") : "border-base-500 text-steel"}`}>
-                Team {t}
+                className={`flex-1 py-1.5 text-sm font-semibold border ${object.settings?.team === t ? (t === "A" ? "border-[#3E8E3E] bg-[#3E8E3E]/20 text-[#7BC87B]" : "border-[#A0692F] bg-[#A0692F]/20 text-[#C89A6A]") : "border-base-500 text-steel"}`}>
+                {t === "A" ? "🐂 Bulls" : "🐻 Bears"}
               </button>
             ))}
           </div>
@@ -320,7 +320,7 @@ function MapSettings({ map, onMeta }: { map: any; onMeta: (p: any) => void }) {
       <div>
         <div className="label mb-1">Lighting</div>
         <div className="grid grid-cols-2 gap-1">
-          {["desert", "dusk", "night", "indoor"].map((p) => (
+          {["forest", "dusk", "night", "indoor"].map((p) => (
             <button key={p} onClick={() => onMeta({ lighting: { ...map.lighting, preset: p } })}
               className={`py-1.5 text-[11px] font-semibold uppercase border ${map.lighting?.preset === p ? "border-accent bg-accent/15 text-accent" : "border-base-500 text-steel"}`}>
               {p}

@@ -13,6 +13,8 @@ import { Target, Shield, Play, Wrench } from "../components/icons";
 import { Nav } from "../components/Nav";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 import { ApiError } from "../lib/api";
+import { useSide, SIDES } from "../lib/side";
+import { CharacterSelect, SideBadge } from "../components/CharacterSelect";
 
 const PRIMARIES = ["m4", "ak", "mp5"];
 const SECONDARIES = ["glock", "deagle"];
@@ -27,16 +29,16 @@ function Preview({ weapon }: { weapon: string }) {
   useFrame((s, dt) => { if (g.current) g.current.rotation.y += dt * 0.4; });
   return (
     <Canvas shadows camera={{ position: [0, 1.4, 3.8], fov: 42 }} dpr={[1, 2]}>
-      <color attach="background" args={["#17120b"]} />
-      <fog attach="fog" args={["#17120b", 5, 14]} />
-      <hemisphereLight args={["#cfe0e8", "#3a2c1a", 0.85]} />
-      <directionalLight position={[5, 8, 5]} intensity={1.3} color="#ffe9c2" castShadow />
-      <directionalLight position={[-5, 3, -4]} intensity={0.5} color="#b9893f" />
+      <color attach="background" args={["#0D2818"]} />
+      <fog attach="fog" args={["#0D2818", 5, 14]} />
+      <hemisphereLight args={["#b8d4b0", "#22301C", 0.85]} />
+      <directionalLight position={[5, 8, 5]} intensity={1.3} color="#ffe3a8" castShadow />
+      <directionalLight position={[-5, 3, -4]} intensity={0.5} color="#8a7a3f" />
       <group ref={g}>
         <Fighter palette={PALETTES.operator} weapon={weapon} position={[0, 0, 0]} />
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}><ringGeometry args={[0.85, 0.95, 48]} /><meshBasicMaterial color="#f0a72e" transparent opacity={0.5} side={THREE.DoubleSide} /></mesh>
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}><ringGeometry args={[0.85, 0.95, 48]} /><meshBasicMaterial color="#D4A017" transparent opacity={0.5} side={THREE.DoubleSide} /></mesh>
       </group>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow><planeGeometry args={[40, 40]} /><meshStandardMaterial color="#2a2114" roughness={0.95} /></mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow><planeGeometry args={[40, 40]} /><meshStandardMaterial color="#1A3A2A" roughness={0.95} /></mesh>
     </Canvas>
   );
 }
@@ -46,6 +48,8 @@ export default function PreMatch() {
   const nav = useNavigate();
   const { loadout, setLoadout } = useLoadout();
   const { player } = usePlayer();
+  const side = useSide((s) => s.side);
+  const clearSide = useSide((s) => s.clear);
   const [map, setMap] = useState<GameMap | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -102,6 +106,9 @@ export default function PreMatch() {
       </>
     );
 
+  // Bull vs Bear side selection — must pick before spawning (cosmetic only).
+  if (!side) return <CharacterSelect />;
+
   const allowed = map.rules?.allowed_weapons || PRIMARIES.concat(SECONDARIES);
   const primaries = PRIMARIES.filter((w) => allowed.includes(w));
   const secondaries = SECONDARIES.filter((w) => allowed.includes(w));
@@ -116,7 +123,11 @@ export default function PreMatch() {
             <h1 className="text-xl font-bold text-white">{map.title}</h1>
             <p className="text-steel text-sm">by {map.creator_username || "creator"} · <span className="font-mono text-accent">{map.active_players ?? 0} / {map.max_players ?? 16}</span> players</p>
           </div>
-          <Link to="/play" className="btn h-9 px-3 text-xs">Back</Link>
+          <div className="flex items-center gap-2">
+            <SideBadge side={side} />
+            <button className="btn btn-ghost h-9 px-2 text-xs" title="Change side" onClick={() => { sound.ui(); clearSide(); }}>Change side</button>
+            <Link to="/play" className="btn h-9 px-3 text-xs">Back</Link>
+          </div>
         </div>
 
         <div className="grid lg:grid-cols-[1fr_380px] gap-4">
@@ -126,9 +137,9 @@ export default function PreMatch() {
             )}>
               <Preview weapon={loadout.primary} />
             </ErrorBoundary>
-            <div className="absolute bottom-3 left-3 panel px-3 py-2 bg-base-800/80 backdrop-blur">
+            <div className="absolute bottom-3 left-3 panel px-3 py-2 bg-base-800/80">
               <div className="label">Operator</div>
-              <div className="font-bold text-white">{player?.username || "Guest"}</div>
+              <div className="font-bold text-white"><span className="mr-1">{SIDES[side].icon}</span>{player?.username || "Guest"}</div>
               <div className="text-[11px] text-steel">{WEAPONS[loadout.primary]?.name} · {WEAPONS[loadout.secondary]?.name} · {loadout.armor}</div>
             </div>
           </div>

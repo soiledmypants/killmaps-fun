@@ -11,6 +11,8 @@ import { useNet } from "../lib/net";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 import { Target, X } from "../components/icons";
 import { VerifyBadge } from "../components/IdentityModal";
+import { useSide, sideIconFor } from "../lib/side";
+import { CharacterSelect, SideBadge } from "../components/CharacterSelect";
 
 const MATCH_SECONDS = 180;
 
@@ -19,7 +21,8 @@ export default function Game() {
   const [params] = useSearchParams();
   const test = params.get("test") === "1";
   const nav = useNavigate();
-  const { wallet, player } = usePlayer();
+  const { wallet, player, username } = usePlayer();
+  const side = useSide((s) => s.side);
   const game = useGame();
   const [map, setMap] = useState<GameMap | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -118,6 +121,9 @@ export default function Game() {
 
   if (!map) return <div className="h-screen flex items-center justify-center bg-base-900 text-steel">Loading arena…</div>;
 
+  // Safety net: entering /game directly (e.g. editor test) without a side chosen.
+  if (!side) return <CharacterSelect />;
+
   return (
     <div className="h-screen w-screen relative bg-base-900 overflow-hidden select-none">
       <ErrorBoundary
@@ -159,6 +165,7 @@ export default function Game() {
         <div className="absolute top-0 inset-x-0 flex items-center justify-between p-3">
           <div className="panel px-3 py-1.5 flex items-center gap-3">
             <span className="font-bold text-white text-sm truncate max-w-[160px]">{map.title}</span>
+            <SideBadge side={side} size="xs" />
             {test && <span className="chip border-accent/50 text-accent">Test</span>}
             <PlayerCount mapId={map.map_id} />
             <RewardEligibility />
@@ -173,14 +180,16 @@ export default function Game() {
           </div>
         </div>
 
-        {/* kill feed */}
+        {/* kill feed — each kill prefixed with the killer's bull/bear icon */}
         <div className="absolute top-16 right-3 space-y-1 text-sm">
           {game.feed.map((f) => (
             <div key={f.id} className="panel px-2.5 py-1 flex items-center gap-2">
+              <span>{sideIconFor(f.killer, side, username)}</span>
               <span className={f.killer === "You" ? "text-verify font-semibold" : "text-steel"}>{f.killer}</span>
               <span className="text-steel/50 text-xs uppercase">{f.weapon}</span>
               {f.head && <span className="text-kill text-[10px] font-bold uppercase tracking-wider">Headshot</span>}
               <Target size={12} className="text-kill" />
+              <span>{sideIconFor(f.victim, side, username)}</span>
               <span className={f.victim === "You" ? "text-kill font-semibold" : "text-steel"}>{f.victim}</span>
             </div>
           ))}
@@ -216,6 +225,7 @@ export default function Game() {
           <h2 className="text-2xl font-bold text-white mb-1">{map.title}</h2>
           <p className="text-steel text-sm mb-1">by {map.creator_username || "creator"}</p>
           <div className="flex items-center justify-center gap-2 my-4">
+            <SideBadge side={side} />
             {player ? <VerifyBadge player={player} /> : <span className="chip border-base-400 text-steel">No identity — practice only</span>}
           </div>
           <button className="btn btn-accent px-6 py-3 pointer-events-auto" onClick={lock}>Click to drop in</button>
@@ -279,7 +289,7 @@ function RewardEligibility() {
 
 function Overlay({ children }: { children: React.ReactNode }) {
   return (
-    <div className="absolute inset-0 z-30 flex items-center justify-center bg-base-900/85 backdrop-blur-sm">
+    <div className="absolute inset-0 z-30 flex items-center justify-center bg-base-900/85">
       <div className="panel p-8 text-center max-w-md pointer-events-auto">{children}</div>
     </div>
   );

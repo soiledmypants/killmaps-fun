@@ -17,13 +17,15 @@ import {
   spawnsWithFacing, resolveRules, PLAYER, WEAPONS, type Solid, type WeaponId, type SpawnPoint,
 } from "../lib/fps";
 
+// Forest battlefield lighting: warm golden ambient, dappled daylight, green haze.
 const LIGHT: Record<string, { sky: string; ground: string; sun: number; amb: number; fog: string; far: number; sunColor: string }> = {
-  desert: { sky: "#cfe0e8", ground: "#7a6238", sun: 1.5, amb: 0.85, fog: "#cdb78d", far: 150, sunColor: "#ffe9c2" },
-  dusk: { sky: "#caa07a", ground: "#2a2018", sun: 1.0, amb: 0.5, fog: "#7a5a3a", far: 110, sunColor: "#ffcaa0" },
-  night: { sky: "#2a3242", ground: "#0c0a06", sun: 0.4, amb: 0.35, fog: "#171410", far: 70, sunColor: "#9fb0c8" },
-  indoor: { sky: "#b8b09c", ground: "#1a1610", sun: 0.8, amb: 0.7, fog: "#15120c", far: 90, sunColor: "#ffe9c2" },
-  warehouse: { sky: "#b8b09c", ground: "#1a1610", sun: 1.0, amb: 0.6, fog: "#1a1610", far: 110, sunColor: "#ffe6bf" },
+  forest: { sky: "#b8d4b0", ground: "#2E4425", sun: 1.4, amb: 0.8, fog: "#5a7050", far: 140, sunColor: "#ffe3a8" },
+  dusk: { sky: "#c99b6a", ground: "#22301C", sun: 1.0, amb: 0.5, fog: "#5c503a", far: 110, sunColor: "#ffc890" },
+  night: { sky: "#20301F", ground: "#0A1F0A", sun: 0.4, amb: 0.35, fog: "#101B10", far: 70, sunColor: "#a8c0a0" },
+  indoor: { sky: "#a8a890", ground: "#1E160E", sun: 0.8, amb: 0.7, fog: "#171208", far: 90, sunColor: "#ffe3a8" },
+  warehouse: { sky: "#a8a890", ground: "#1E160E", sun: 1.0, amb: 0.6, fog: "#1E160E", far: 110, sunColor: "#ffe0a0" },
 };
+LIGHT.desert = LIGHT.forest; // legacy preset id from older maps
 
 interface Bot {
   id: string; name: string; weapon: WeaponId; pos: THREE.Vector3; hp: number; alive: boolean;
@@ -76,7 +78,7 @@ function Arena({ map, cbs }: { map: GameMap; cbs: Cbs }) {
   const spawns = useMemo<SpawnPoint[]>(() => spawnsWithFacing(map), [map]);
   const bounds = useMemo(() => mapBounds(map), [map]);
   const rules = useMemo(() => resolveRules(map), [map]);
-  const preset = LIGHT[map.lighting?.preset || "desert"] || LIGHT.desert;
+  const preset = LIGHT[map.lighting?.preset || "forest"] || LIGHT.forest;
   const lights = useMemo(() => map.objects.filter((o) => o.kind === "light"), [map]);
   const worldObjects = useMemo(() => map.objects.filter((o) => o.kind !== "light" && !isPickup(o.kind)), [map]);
   const pickupObjs = useMemo(() => map.objects.filter((o) => isPickup(o.kind)), [map]);

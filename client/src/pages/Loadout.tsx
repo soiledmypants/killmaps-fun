@@ -159,7 +159,7 @@ function Spotlight() {
   return (
     <>
       <primitive object={target} />
-      <spotLight position={[2.4, 5.4, 3.2]} target={target} angle={0.5} penumbra={0.85} intensity={2.8} distance={24} color="#ffe9c2" />
+      <spotLight position={[2.4, 5.4, 3.2]} target={target} angle={0.5} penumbra={0.85} intensity={2.8} distance={24} color="#ffe3a8" />
     </>
   );
 }
@@ -169,11 +169,11 @@ function Pedestal() {
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.006, 0]}>
         <circleGeometry args={[1.3, 64]} />
-        <meshStandardMaterial color="#1b1610" roughness={1} metalness={0.1} />
+        <meshStandardMaterial color="#123020" roughness={1} metalness={0.1} />
       </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}>
         <ringGeometry args={[1.18, 1.3, 64]} />
-        <meshBasicMaterial color="#f0a72e" transparent opacity={0.35} side={THREE.DoubleSide} />
+        <meshBasicMaterial color="#D4A017" transparent opacity={0.35} side={THREE.DoubleSide} />
       </mesh>
     </group>
   );
@@ -189,12 +189,12 @@ function OperatorPreview({ weapon }: { weapon: WeaponId }) {
       gl={{ antialias: true, powerPreference: "high-performance" }}
       style={{ touchAction: "none", cursor: "grab" }}
     >
-      <color attach="background" args={["#15110a"]} />
-      <fog attach="fog" args={["#15110a", 7, 18]} />
+      <color attach="background" args={["#0D2818"]} />
+      <fog attach="fog" args={["#0D2818", 7, 18]} />
 
       {/* brighter-but-still-dark lighting so weapon finishes read clearly */}
-      <hemisphereLight args={["#cfe0e8", "#2a2014", 0.95]} />
-      <directionalLight position={[-4, 3, 4]} intensity={0.55} color="#9fb4c8" />
+      <hemisphereLight args={["#b8d4b0", "#14301F", 0.95]} />
+      <directionalLight position={[-4, 3, 4]} intensity={0.55} color="#a8c0a0" />
       <Spotlight />
 
       <Fighter palette={PALETTES.operator} weaponNode={<SwapWeapon weaponId={weapon} />} position={[0, 0, 0]} />
@@ -203,7 +203,7 @@ function OperatorPreview({ weapon }: { weapon: WeaponId }) {
 
       <mesh rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[60, 60]} />
-        <meshStandardMaterial color="#221a10" roughness={1} />
+        <meshStandardMaterial color="#1A3A2A" roughness={1} />
       </mesh>
 
       <CameraRig controls={controls} />
@@ -238,10 +238,10 @@ export default function Loadout() {
       <div className="grid lg:grid-cols-[1fr_380px] gap-4">
         <div className="panel relative overflow-hidden h-[520px]">
           <OperatorPreview weapon={active} />
-          <div className="absolute bottom-3 left-3 panel px-3 py-2 bg-base-800/80 backdrop-blur pointer-events-none">
+          <div className="absolute bottom-3 left-3 panel px-3 py-2 bg-base-800/80 pointer-events-none">
             <div className="label">Operator</div>
             <div className="font-bold text-white">Vanguard-01</div>
-            <div className="text-[11px] text-steel">Desert tactical operator</div>
+            <div className="text-[11px] text-steel">Forest tactical operator</div>
           </div>
           <div className="absolute top-3 right-3 chip border-base-500 text-steel bg-base-800/80 pointer-events-none">Holding {w.name}</div>
           <div className="absolute bottom-3 right-3 text-[10px] leading-relaxed text-steel/70 text-right pointer-events-none select-none">
@@ -290,7 +290,7 @@ export default function Loadout() {
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
         <SlotCard title="Armor" body="Plate carrier" />
         <SlotCard title="Gadget" body="Frag · Flash · Smoke" />
-        <SlotCard title="Operator skin" body="Desert · Mercenary · Raider" />
+        <SlotCard title="Operator skin" body="Woodland · Mercenary · Raider" />
         <SlotCard title="Weapon finish" body="Camo & patterns" />
       </div>
 

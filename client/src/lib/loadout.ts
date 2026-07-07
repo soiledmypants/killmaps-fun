@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import type { Loadout } from "./types";
 
-const KEY = "counterstrike.loadout";
+const KEY = "bullstrike.loadout";
 
 function load(): Loadout {
   try {

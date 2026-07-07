@@ -1,8 +1,8 @@
 # Asset Credits
 
-KillMaps.fun uses only original, procedurally-generated geometry and permissively
-licensed third-party assets. No copyrighted game assets (Counter-Strike, CS:GO, CS2,
-Call of Duty, Valorant, Activision, Valve, or any ripped game files) are used.
+BULLSTRIKE uses only original, procedurally-generated geometry and permissively
+licensed third-party assets. No copyrighted game assets from any commercial shooter
+(or any ripped game files) are used.
 
 ## In this repo
 

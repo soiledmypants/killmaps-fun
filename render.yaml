@@ -1,9 +1,9 @@
-# Render config for the KillMaps.fun backend (Node + Express).
+# Render config for the BULLSTRIKE backend (Node + Express).
 # Backend root is server/. Secrets are set in the Render dashboard, NOT here.
 
 services:
   - type: web
-    name: killmaps-api
+    name: bullstrike-api
     runtime: node
     rootDir: server
     plan: free
@@ -22,9 +22,9 @@ services:
       # Minimum token holding required for a player to be "verified".
       - key: MIN_TOKENS
         value: "250000"
-      # Token ticker/symbol surfaced in the UI (e.g. "$CS").
+      # Token ticker/symbol surfaced in the UI (e.g. "$BS").
       - key: TOKEN_TICKER
-        value: "CS"
+        value: "BS"
       # Production MUST keep real token verification on. (DEV-only bypass flag.)
       - key: DISABLE_TOKEN_VERIFICATION
         value: "false"
@@ -37,12 +37,12 @@ services:
       # Without it, the free instance's filesystem is wiped on every deploy/restart.
       - key: DATABASE_URL
         sync: false
-      # Required for live token verification + payouts (paid mainnet RPC).
+      # Required for live token verification + payouts (paid mainnet RPC, e.g. Helius).
       - key: SOLANA_RPC_URL
         sync: false
-      # The pump.fun token contract address players must hold to be verified.
+      # The $BS pump.fun token contract address players must hold to be verified.
       - key: TOKEN_CA
-        value: CcFNaWiZ27pfaFrvW85apjg18nSf51VENCHFRuMfpump
+        value: CkZTQQw1gNrqv1q4V5txXURJ6Htp1T8Qjz5gZbS4pump
       # Treasury wallet — signs ALL creator reward settlements (and player payouts).
       # This is the ONLY wallet that pays creator rewards.
       - key: TREASURY_WALLET_PRIVATE_KEY
@@ -56,7 +56,7 @@ services:
       - key: CREATOR_REWARDS_PUBLIC_KEY
         sync: false
       # Frontend origin(s), comma-separated, for CORS — the custom domain
-      # (e.g. https://counterstrikepf.fun) and/or the Netlify URL.
+      # (e.g. https://bullstrike.fun) and/or the Netlify URL.
       - key: FRONTEND_URL
         sync: false
       # Protects POST /api/admin/force-settlement (Authorization: Bearer <secret>).

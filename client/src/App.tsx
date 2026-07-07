@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { Nav } from "./components/Nav";
+import { Footer } from "./components/Footer";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { usePlayer } from "./lib/player";
 import Home from "./pages/Home";
@@ -44,6 +45,7 @@ export default function App() {
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </div>
+              <Footer />
             </>
           }
         />

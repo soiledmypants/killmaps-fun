@@ -19,18 +19,18 @@ export function MapThumb({ map, className = "" }: { map: GameMap; className?: st
   const h = maxZ - minZ + pad * 2;
 
   const color = (kind: string) => {
-    if (kind === "floor") return "#3a3120";
-    if (kind === "wall" || kind === "door" || kind === "window") return "#8d7853";
-    if (kind === "spawn") return "#f0a72e";
-    if (kind === "team_spawn") return "#5b8fd6";
-    if (kind.startsWith("pickup")) return "#8bb04f";
-    if (kind === "ramp" || kind === "stairs" || kind === "platform" || kind === "elevated_platform") return "#6b5a3a";
-    return "#a8946c";
+    if (kind === "floor") return "#2E4425";
+    if (kind === "wall" || kind === "door" || kind === "window") return "#6B7A5E";
+    if (kind === "spawn") return "#D4A017";
+    if (kind === "team_spawn") return "#3E8E3E";
+    if (kind.startsWith("pickup")) return "#3ECF3E";
+    if (kind === "ramp" || kind === "stairs" || kind === "platform" || kind === "elevated_platform") return "#5C4630";
+    return "#4A3B26";
   };
 
   return (
     <svg viewBox={`${minX - pad} ${minZ - pad} ${w} ${h}`} className={className} preserveAspectRatio="xMidYMid slice">
-      <rect x={minX - pad} y={minZ - pad} width={w} height={h} fill="#16120b" />
+      <rect x={minX - pad} y={minZ - pad} width={w} height={h} fill="#0D2818" />
       {objs.map((o) => {
         const def = getAsset(o.kind);
         const ow = def.size[0] * o.scale[0];

@@ -32,18 +32,16 @@ function material(kind: string, color: string): THREE.MeshStandardMaterial {
   const def = getAsset(kind);
   const c = new THREE.Color(color || def.color);
   const m = new THREE.MeshStandardMaterial({ color: c, flatShading: true });
-  if (kind === "wall" || kind === "platform" || kind === "elevated_platform" || kind === "fence" || kind === "obstacle") {
-    m.metalness = 0.55;
-    m.roughness = 0.5;
-  } else if (kind === "barrel") {
-    m.metalness = 0.6;
-    m.roughness = 0.4;
-  } else if (kind === "crate") {
+  // Natural forest materials: stone/wood/dirt read matte, never metallic.
+  if (kind === "wall" || kind === "obstacle") {
     m.metalness = 0.05;
-    m.roughness = 0.85;
+    m.roughness = 0.9; // mossy stone
+  } else if (kind === "barrel" || kind === "fence" || kind === "crate" || kind === "platform" || kind === "elevated_platform" || kind === "stairs") {
+    m.metalness = 0.02;
+    m.roughness = 0.85; // weathered timber / bark
   } else {
-    m.metalness = 0.1;
-    m.roughness = 0.9;
+    m.metalness = 0.05;
+    m.roughness = 0.95; // packed dirt
   }
   return m;
 }
@@ -134,7 +132,8 @@ export function AssetMesh({ object, selected = false, ghost = false }: { object:
     }
     case "marker": {
       const team = object.settings?.team;
-      const mc = object.kind === "team_spawn" ? (team === "B" ? "#ff3b30" : "#3b82f6") : "#f5a623";
+      // Team A = Bulls (green) · Team B = Bears (brown)
+      const mc = object.kind === "team_spawn" ? (team === "B" ? "#A0692F" : "#3E8E3E") : "#D4A017";
       body = (
         <group>
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -h / 2 + 0.02, 0]}>
@@ -194,7 +193,7 @@ export function AssetMesh({ object, selected = false, ghost = false }: { object:
       {selected && (
         <mesh>
           <boxGeometry args={[w + 0.12, h + 0.12, d + 0.12]} />
-          <meshBasicMaterial color="#f5a623" wireframe />
+          <meshBasicMaterial color="#D4A017" wireframe />
         </mesh>
       )}
       {opacity < 1 && null}

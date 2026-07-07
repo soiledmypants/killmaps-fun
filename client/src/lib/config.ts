@@ -1,10 +1,10 @@
 // Runtime config. Display-only values; the BACKEND (/api/config) is the source of
-// truth for token verification + reward economics. No Boss.fun defaults are baked in
-// — KillMaps must never inherit another project's token CA or wallets.
+// truth for token verification + reward economics. No foundation-repo defaults are
+// baked in — BULLSTRIKE must never inherit another project's token CA or wallets.
 
-// COUNTERSTRIKE pump.fun token (mainnet). Override with VITE_TOKEN_CA if needed.
+// BULLSTRIKE pump.fun token ($BS, mainnet). Override with VITE_TOKEN_CA if needed.
 export const TOKEN_CA =
-  (import.meta.env.VITE_TOKEN_CA as string | undefined)?.trim() || "CcFNaWiZ27pfaFrvW85apjg18nSf51VENCHFRuMfpump";
+  (import.meta.env.VITE_TOKEN_CA as string | undefined)?.trim() || "CkZTQQw1gNrqv1q4V5txXURJ6Htp1T8Qjz5gZbS4pump";
 
 // The CA + pump.fun link are shown by default. Set VITE_TOKEN_LIVE=false to hide them
 // and show a "SOON" placeholder instead (pre-launch).
@@ -14,15 +14,16 @@ export const SOCIALS = {
   pumpfun:
     (import.meta.env.VITE_PUMPFUN_URL as string | undefined)?.trim() ||
     (TOKEN_CA ? `https://pump.fun/coin/${TOKEN_CA}` : ""),
-  twitter: (import.meta.env.VITE_TWITTER_URL as string | undefined)?.trim() || "https://x.com/CounterStrikePF",
+  twitter: (import.meta.env.VITE_TWITTER_URL as string | undefined)?.trim() || "https://x.com/BULLSTRIKE_FUN",
 };
 
-export const BRAND = "COUNTERSTRIKE";
+export const BRAND = "BULLSTRIKE";
+export const SITE_URL = "https://bullstrike.fun";
 
-// Token ticker / symbol shown in the UI, e.g. "Hold 250,000 $CS". Env-overridable so it
+// Token ticker / symbol shown in the UI, e.g. "Hold 250,000 $BS". Env-overridable so it
 // always matches the backend's TOKEN_TICKER (exposed via /api/config.ticker).
-export const TICKER = (import.meta.env.VITE_TOKEN_TICKER as string | undefined)?.trim() || "CS";
-export const TICKER_TAG = `$${TICKER}`; // e.g. "$CS"
+export const TICKER = (import.meta.env.VITE_TOKEN_TICKER as string | undefined)?.trim() || "BS";
+export const TICKER_TAG = `$${TICKER}`; // e.g. "$BS"
 
 export const MIN_TOKENS_DISPLAY = 250000;
 

@@ -42,7 +42,7 @@ function envOrigins() {
     .filter(Boolean);
 }
 const ALLOWED_ORIGINS = new Set(
-  [...DEV_ORIGINS, "https://counterstrikepf.fun", ...envOrigins()].filter(Boolean).map(normOrigin)
+  [...DEV_ORIGINS, "https://bullstrike.fun", ...envOrigins()].filter(Boolean).map(normOrigin)
 );
 app.use(
   cors({
@@ -55,7 +55,7 @@ app.use(
 );
 app.use(express.json({ limit: "12mb" }));
 
-// Local-dev default is 9001 (Boss.fun/course-fun owns 8787). Render overrides via PORT.
+// Local-dev default is 9001 (the foundation repo owns 8787). Render overrides via PORT.
 const PORT = process.env.PORT || 9001;
 
 // ---------------------------------------------------------------------------
@@ -594,7 +594,7 @@ init()
     const db = read();
     db.settlement = { last: Date.now(), next: Date.now() + REWARD.SETTLEMENT_MS };
     server.listen(PORT, () => {
-      console.log(`[killmaps] server on http://localhost:${PORT}`);
+      console.log(`[bullstrike] server on http://localhost:${PORT}`);
       console.log(`[db] storage backend: ${mode}${mode === "file" ? " (ephemeral — set DATABASE_URL for persistence)" : " (persistent)"}`);
       console.log(`[rewards] mode=${REWARD_MODE} · settlement every ${Math.round(REWARD.SETTLEMENT_MS / 1000)}s · ${REWARD.PER_KILL} SOL/validated kill · daily cap ${REWARD.DAILY_CAP} SOL`);
       console.log(`[rewards] anti-farm: minMatch=${ANTIFARM.MIN_MATCH_MS}ms pairCooldown=${ANTIFARM.PAIR_COOLDOWN_MS}ms unlock=${ANTIFARM.CREATOR_MIN_UNIQUE_PLAYERS}players/${ANTIFARM.CREATOR_MIN_VERIFIED_KILLS}kills`);

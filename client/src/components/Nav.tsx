@@ -25,14 +25,14 @@ export function Nav({ overlay = false }: { overlay?: boolean }) {
         className={
           overlay
             ? "absolute top-0 inset-x-0 z-40"
-            : "sticky top-0 z-40 border-b border-base-500 bg-base-800/90 backdrop-blur"
+            : "sticky top-0 z-40 border-b border-base-500 bg-base-800/90"
         }
       >
         <div className={`mx-auto max-w-7xl px-4 h-14 flex items-center gap-6 ${overlay ? "bg-gradient-to-b from-base-900/80 to-transparent" : ""}`}>
           <Link to="/" className="flex items-center gap-2 shrink-0">
-            <Target size={20} className="text-accent" />
-            <span className="font-bold tracking-tight text-white">
-              COUNTER<span className="text-accent">STRIKE</span>
+            <span className="text-xl leading-none">🐂</span>
+            <span className="font-display text-lg tracking-wide text-white border-b-2 border-accent leading-tight">
+              BULL<span className="text-accent">STRIKE</span>
             </span>
             <span className="hidden sm:inline-block text-[10px] font-bold text-accent border border-accent/40 bg-accent/10 px-1.5 py-0.5 leading-none">{TICKER_TAG}</span>
           </Link>
@@ -56,12 +56,12 @@ export function Nav({ overlay = false }: { overlay?: boolean }) {
 
           <div className="ml-auto flex items-center gap-2">
             {SOCIALS.twitter && (
-              <a href={SOCIALS.twitter} target="_blank" rel="noreferrer" title="@CounterStrikePF on X" className="w-8 h-8 flex items-center justify-center border border-base-400 bg-base-700/80 text-steel hover:text-white hover:bg-base-600 transition-colors">
+              <a href={SOCIALS.twitter} target="_blank" rel="noreferrer" title="@BULLSTRIKE_FUN on X" className="w-8 h-8 flex items-center justify-center border border-base-400 bg-base-700/80 text-steel hover:text-white hover:bg-base-600 transition-colors">
                 <X size={15} />
               </a>
             )}
             <button
-              className="flex items-center gap-2 px-3 py-1.5 border border-base-400 bg-base-700/80 hover:bg-base-600 transition-colors backdrop-blur"
+              className="flex items-center gap-2 px-3 py-1.5 border border-base-400 bg-base-700/80 hover:bg-base-600 transition-colors"
               onClick={() => setModal(true)}
             >
               {player ? <VerifyBadge player={player} /> : null}

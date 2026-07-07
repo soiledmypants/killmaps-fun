@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { api, ApiError } from "./api";
 import type { Player, PublicConfig } from "./types";
 
-const LS_KEY = "killmaps.identity";
+const LS_KEY = "bullstrike.identity";
 
 interface Stored {
   wallet: string;

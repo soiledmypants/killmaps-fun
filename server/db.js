@@ -77,16 +77,16 @@ async function pgBackend(databaseUrl) {
     ssl: { rejectUnauthorized: false },
     max: 4,
   });
-  await pool.query(`CREATE TABLE IF NOT EXISTS killmaps_state (id text PRIMARY KEY, data jsonb NOT NULL)`);
+  await pool.query(`CREATE TABLE IF NOT EXISTS bullstrike_state (id text PRIMARY KEY, data jsonb NOT NULL)`);
   return {
     name: "postgres",
     async load() {
-      const r = await pool.query(`SELECT data FROM killmaps_state WHERE id = 'db'`);
+      const r = await pool.query(`SELECT data FROM bullstrike_state WHERE id = 'db'`);
       return r.rows[0]?.data ?? structuredClone(DEFAULT_DB);
     },
     async persist(db) {
       await pool.query(
-        `INSERT INTO killmaps_state (id, data) VALUES ('db', $1::jsonb)
+        `INSERT INTO bullstrike_state (id, data) VALUES ('db', $1::jsonb)
          ON CONFLICT (id) DO UPDATE SET data = $1::jsonb`,
         [JSON.stringify(db)]
       );

@@ -8,23 +8,25 @@ import { snapVec } from "../lib/geometry";
 import { AssetMesh } from "./AssetMesh";
 import type { Vec3 } from "../lib/types";
 
+// Forest battlefield lighting: warm golden ambient, dappled daylight, green haze.
 const PRESETS: Record<string, { sky: string; ground: string; sun: number; amb: number; fog: string; sunColor: string }> = {
-  desert: { sky: "#cfe0e8", ground: "#7a6238", sun: 1.5, amb: 0.85, fog: "#cdb78d", sunColor: "#ffe9c2" },
-  dusk: { sky: "#caa07a", ground: "#2a2018", sun: 1.0, amb: 0.5, fog: "#7a5a3a", sunColor: "#ffcaa0" },
-  night: { sky: "#2a3242", ground: "#0c0a06", sun: 0.4, amb: 0.35, fog: "#171410", sunColor: "#9fb0c8" },
-  indoor: { sky: "#b8b09c", ground: "#1a1610", sun: 0.8, amb: 0.7, fog: "#15120c", sunColor: "#ffe9c2" },
-  warehouse: { sky: "#b8b09c", ground: "#1a1610", sun: 1.0, amb: 0.6, fog: "#1a1610", sunColor: "#ffe6bf" },
+  forest: { sky: "#b8d4b0", ground: "#2E4425", sun: 1.4, amb: 0.8, fog: "#5a7050", sunColor: "#ffe3a8" },
+  dusk: { sky: "#c99b6a", ground: "#22301C", sun: 1.0, amb: 0.5, fog: "#5c503a", sunColor: "#ffc890" },
+  night: { sky: "#20301F", ground: "#0A1F0A", sun: 0.4, amb: 0.35, fog: "#101B10", sunColor: "#a8c0a0" },
+  indoor: { sky: "#a8a890", ground: "#1E160E", sun: 0.8, amb: 0.7, fog: "#171208", sunColor: "#ffe3a8" },
+  warehouse: { sky: "#a8a890", ground: "#1E160E", sun: 1.0, amb: 0.6, fog: "#1E160E", sunColor: "#ffe0a0" },
 };
+PRESETS.desert = PRESETS.forest; // legacy preset id from older maps
 
 function SceneLights({ preset }: { preset: string }) {
-  const p = PRESETS[preset] || PRESETS.desert;
+  const p = PRESETS[preset] || PRESETS.forest;
   return (
     <>
       <hemisphereLight args={[p.sky, p.ground, p.amb]} />
       <directionalLight position={[30, 50, 20]} intensity={p.sun} color={p.sunColor} castShadow shadow-mapSize={[2048, 2048]}>
         <orthographicCamera attach="shadow-camera" args={[-60, 60, 60, -60, 0.1, 200]} />
       </directionalLight>
-      <directionalLight position={[-20, 25, -15]} intensity={p.sun * 0.3} color="#b9893f" />
+      <directionalLight position={[-20, 25, -15]} intensity={p.sun * 0.3} color="#8a7a3f" />
     </>
   );
 }
@@ -41,7 +43,7 @@ function Editor() {
   const gizmoDrag = useRef(false);
 
   const selected = map?.objects.find((o) => o.id === selectedId) || null;
-  const preset = map?.lighting.preset || "desert";
+  const preset = map?.lighting.preset || "forest";
 
   // Sync the gizmo proxy when the selection changes.
   useEffect(() => {
@@ -123,18 +125,18 @@ function Editor() {
 
   return (
     <>
-      <color attach="background" args={[(PRESETS[preset] || PRESETS.desert).fog]} />
-      <fog attach="fog" args={[(PRESETS[preset] || PRESETS.desert).fog, 70, 180]} />
+      <color attach="background" args={[(PRESETS[preset] || PRESETS.forest).fog]} />
+      <fog attach="fog" args={[(PRESETS[preset] || PRESETS.forest).fog, 70, 180]} />
       <SceneLights preset={preset} />
 
       <Grid
         args={[400, 400]}
         cellSize={1}
         cellThickness={0.5}
-        cellColor="#2a2417"
+        cellColor="#1A3A2A"
         sectionSize={8}
         sectionThickness={1}
-        sectionColor="#4a3d27"
+        sectionColor="#38583C"
         fadeDistance={150}
         fadeStrength={1.5}
         infiniteGrid

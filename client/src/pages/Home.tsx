@@ -7,12 +7,14 @@ import { ContractAddress } from "../components/ContractAddress";
 import { MapThumb } from "../components/MapThumb";
 import { usePlayer } from "../lib/player";
 import { api } from "../lib/api";
-import { shortWallet, fmtSol, TICKER_TAG } from "../lib/config";
+import { shortWallet, fmtSol, TICKER_TAG, SOCIALS, SITE_URL } from "../lib/config";
 import type { GameMap } from "../lib/types";
+import { useSide, SIDES } from "../lib/side";
 import { Target, Wrench, Coins, Globe, Play, Shield, User } from "../components/icons";
 
 export default function Home() {
   const { wallet, username, player, config } = usePlayer();
+  const side = useSide((s) => s.side);
   const [maps, setMaps] = useState<GameMap[]>([]);
   const [featured, setFeatured] = useState<GameMap | null>(null);
   const [totalPaid, setTotalPaid] = useState<number | null>(null);
@@ -100,29 +102,37 @@ export default function Home() {
 
       {/* CENTER COPY + CTA */}
       <div className="absolute inset-x-0 bottom-32 flex flex-col items-center text-center px-4 pointer-events-none">
-        <div className="chip border-accent/40 bg-accent/10 text-accent mb-4 pointer-events-auto">{TICKER_TAG} · Tactical FPS map platform · Solana mainnet</div>
-        <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight text-white leading-[1.05] drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)]">
-          Build tactical maps.<br />Earn from <span className="text-accent">verified kills</span>.
+        <div className="chip border-accent/40 bg-accent/10 text-accent mb-4 pointer-events-auto">{TICKER_TAG} · Bulls vs Bears · Solana mainnet</div>
+        <h1 className="text-2xl md:text-4xl text-white leading-[1.15] drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)]">
+          BUILD MAPS. <span className="text-accent">CHOOSE YOUR SIDE.</span><br />EARN FROM VERIFIED KILLS.
         </h1>
         <p className="mt-3 text-steel max-w-xl text-sm md:text-base">
-          Drop into player-made arenas. No wagers. No betting. Just maps, fights, and rewards.
+          Bulls vs Bears — tactical combat in the forest. Verified {TICKER_TAG} holders fight on player-built maps. Creators earn from real kills.
         </p>
         <div className="mt-6 flex flex-wrap gap-3 justify-center pointer-events-auto">
-          <Link to="/play" className="btn btn-accent px-8 py-3.5 text-base shadow-[0_0_30px_-8px_rgba(245,166,35,0.6)]">
-            <Target size={18} /> Play Maps
+          <Link to="/play" className="btn btn-accent px-8 py-3.5 text-base shadow-[0_0_30px_-8px_rgba(212,160,23,0.6)]">
+            <Target size={18} /> ENTER THE FOREST
           </Link>
-          <Link to="/create" className="btn px-8 py-3.5 text-base bg-base-700/80 backdrop-blur">
+          <Link to="/create" className="btn px-8 py-3.5 text-base bg-base-700/80">
             <Wrench size={18} /> Create Map
           </Link>
         </div>
-        <ContractAddress className="mt-5 w-[min(92vw,30rem)] pointer-events-auto" />
+        <div className="mt-3 flex items-center gap-4 text-[11px] uppercase tracking-wider text-steel pointer-events-auto">
+          <a href={SOCIALS.twitter} target="_blank" rel="noreferrer" className="hover:text-accent">@BULLSTRIKE_FUN</a>
+          <span className="text-steel/40">·</span>
+          <a href={SITE_URL} className="hover:text-accent">bullstrike.fun</a>
+        </div>
+        <ContractAddress className="mt-4 w-[min(92vw,30rem)] pointer-events-auto" />
       </div>
 
       {/* BOTTOM PLAYER CARD */}
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[min(92vw,30rem)]">
-        <div className="panel px-4 py-3 flex items-center gap-3 bg-base-800/85 backdrop-blur">
-          <div className="w-11 h-11 bg-base-600 border border-base-400 flex items-center justify-center shrink-0">
-            <User size={22} className="text-accent" />
+        <div className="panel px-4 py-3 flex items-center gap-3 bg-base-800/85">
+          <div
+            className="w-11 h-11 bg-base-600 border border-base-400 flex items-center justify-center shrink-0 text-2xl"
+            style={side ? { borderColor: SIDES[side].color, background: `${SIDES[side].color}33` } : undefined}
+          >
+            {side ? SIDES[side].icon : <User size={22} className="text-accent" />}
           </div>
           {wallet ? (
             <>
@@ -157,7 +167,7 @@ export default function Home() {
 
 function Panel({ title, icon: Icon, children }: { title: string; icon: any; children: React.ReactNode }) {
   return (
-    <div className="panel p-3 bg-base-800/80 backdrop-blur">
+    <div className="panel p-3 bg-base-800/80">
       <div className="flex items-center gap-2 mb-2.5">
         <Icon size={14} className="text-accent" />
         <span className="label">{title}</span>
